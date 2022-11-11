@@ -31,8 +31,6 @@ export class Puzzle {
 
         // this is where you would create the nr x nc Cell objects that you need.
         // OPTION 1: Create what looks like a 2D array this.cells[R][C]
-        
-        // Initialize all cells as empty
         this.cells = []
         for (let r = 0; r < numRow; r++) { 
             this.cells[r] = []; 
@@ -43,7 +41,7 @@ export class Puzzle {
 
         // set ninjase cell
         this.cells[ninjase.row][ninjase.column].type = "ninjase"
-        
+
         // set wall cells
         for (let w of this.wall) {
             this.cells[w.row][w.column].type = "wall"
@@ -60,7 +58,6 @@ export class Puzzle {
             this.cells[k.row][k.column].type = "key"
             this.cells[k.row][k.column].color = k.color
         }
-
     }
 }
 
@@ -75,6 +72,6 @@ export class Model {
         let wall = level.wall
         let door = level.door
         let key = level.key
-        this.puzzle = new Puzzle(numRow, numCol, ninjase, wall, door, key)
+        this.puzzle = new Puzzle(numRow, numCol)
     }
 }

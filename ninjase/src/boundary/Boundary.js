@@ -24,8 +24,8 @@ export function redrawCanvas(model, canvasObj) {
     ctx.clearRect( 0,0, canvasObj.width, canvasObj.height);  
    
     // showing the outermost information
-    let nr = model.puzzle.nr
-    let nc = model.puzzle.nc
+    let nr = model.puzzle.numRow
+    let nc = model.puzzle.numCol
 
     ctx.fillStyle = 'black'
 
