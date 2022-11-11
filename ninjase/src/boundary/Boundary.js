@@ -1,8 +1,10 @@
+import ninja_path from './ninja-se.png'
 // redraw the Puzzle so I can see it
 
 // Scaling Constants for Canvas
 var BOXSIZE = 100;
 const OFFSET = 8;
+
 
 /** Represents a rectangle. */
 export class Square {
@@ -40,6 +42,42 @@ export function redrawCanvas(model, canvasObj) {
                 ctx.beginPath()
                 ctx.strokeStyle = 'blue'
                 ctx.rect(sq.x, sq.y, sq.size, sq.size)
+                ctx.stroke()
+            }
+            else if(type === 'wall'){
+                ctx.beginPath()
+                ctx.strokeStyle = 'blue'
+                ctx.fillStyle = 'black'
+                ctx.fillRect(sq.x, sq.y, sq.size, sq.size)
+                ctx.stroke()
+                // ctx.fillStyle = 'black';
+                // ctx.rect(sq.x, sq.y, sq.size, sq.size)
+            }
+            else if(type === 'ninjase'){
+                //const ninjaImg = document.createElement("ninja-se.png")
+                const ninjaImg = new Image()
+                ninjaImg.src = ninja_path
+                ctx.drawImage(ninjaImg, sq.x, sq.y, sq.size, sq.size)
+            }
+            else if(type === 'key'){
+                //var color = parsecell.color
+                ctx.beginPath()
+                ctx.strokeStyle = 'blue'
+                ctx.rect(sq.x, sq.y, sq.size, sq.size)
+                ctx.fillStyle = cell.color
+                ctx.fillRect(sq.x + 30, sq.y + 30, sq.size - 60, sq.size - 60)
+                ctx.stroke()
+            }
+            else if(type === 'door'){
+                //var color = parsecell.color
+                ctx.beginPath()
+                ctx.strokeStyle = 'blue'
+                ctx.fillStyle = 'black'
+                ctx.fillRect(sq.x, sq.y, sq.size, sq.size)
+                ctx.fillStyle = cell.color
+                ctx.fillRect(sq.x + 10, sq.y + 10, sq.size - 20, sq.size - 20)
+                ctx.fillStyle = 'white'
+                ctx.fillRect(sq.x + 30, sq.y + 30, sq.size - 60, sq.size - 60)
                 ctx.stroke()
             }
         }
