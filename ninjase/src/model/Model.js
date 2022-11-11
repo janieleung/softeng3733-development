@@ -28,6 +28,10 @@ export class Puzzle {
     constructor(numRow, numCol, ninjase, wall, door, key) {
         this.numRow = numRow
         this.numCol = numCol
+        this.ninjase = ninjase
+        this.wall = wall
+        this.door = door
+        this.key = key
 
         // this is where you would create the nr x nc Cell objects that you need.
         // OPTION 1: Create what looks like a 2D array this.cells[R][C]
@@ -69,9 +73,9 @@ export class Model {
         let numRow = level.rows
         let numCol = level.columns
         let ninjase = level.ninjase
-        let wall = level.wall
-        let door = level.door
-        let key = level.key
-        this.puzzle = new Puzzle(numRow, numCol)
+        let wall = level.walls
+        let door = level.doors
+        let key = level.keys
+        this.puzzle = new Puzzle(numRow, numCol, ninjase, wall, door, key)
     }
 }

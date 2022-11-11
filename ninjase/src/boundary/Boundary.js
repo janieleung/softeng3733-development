@@ -24,7 +24,7 @@ export function redrawCanvas(model, canvasObj) {
     ctx.clearRect( 0,0, canvasObj.width, canvasObj.height);  
    
     // showing the outermost information
-    let nr = model.puzzle.numRow
+    let nr = model.puzzle.numRow 
     let nc = model.puzzle.numCol
 
     ctx.fillStyle = 'black'
@@ -33,11 +33,15 @@ export function redrawCanvas(model, canvasObj) {
         for (let c = 0; c < nc; c++) {
             let cell = model.puzzle.cells[r][c]
             let sq = computeSquare(cell)
-
+            let type = cell.type
             // HERE is where you draw everything about this cell that you know about...
-            ctx.beginPath()
-            ctx.rect(sq.x, sq.y, sq.size, sq.size)
-            ctx.stroke()
+            console.log(cell)
+            if(type === 'empty'){
+                ctx.beginPath()
+                ctx.strokeStyle = 'blue'
+                ctx.rect(sq.x, sq.y, sq.size, sq.size)
+                ctx.stroke()
+            }
         }
     }
 }
