@@ -6,3 +6,15 @@ export function selectMove(model, direction) {
     model.puzzle.moveSelected(direction)
     return model.copy();
 }
+
+// Use Case 2: Move NinjaSe
+export function moveHere(model){
+    model.puzzle.moveNinjase()
+    return model.copy();
+}
+
+// Use Case 3: Pick Up Key
+export function pickUpKey(model){
+    model.puzzle.pickUpKey();
+    return model.copy();
+}

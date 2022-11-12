@@ -47,9 +47,20 @@ export function showSelected(puzzle, ctx){
     ctx.lineWidth = 1
 }
 
+export function showNinjaSse(puzzle, ctx){
+    let ninjase = puzzle.ninjase
+    let ninjaseCell = puzzle.cells[ninjase.row][ninjase.column]
+    let sq = computeSquare(ninjaseCell)
+    console.log("Ninja-Se is at ", ninjaseCell)
+    const ninjaImg = new Image()
+    ninjaImg.src = ninja_path
+    ctx.drawImage(ninjaImg, sq.x, sq.y, sq.size, sq.size) 
+}
+
 /** Redraw entire canvas from model. */
 export function redrawCanvas(model, canvasObj) {
     console.log("redrawing canvas....")
+    console.log("model = ", model)
     const ctx = canvasObj.getContext('2d');
     ctx.clearRect( 0,0, canvasObj.width, canvasObj.height);  
    
@@ -81,11 +92,6 @@ export function redrawCanvas(model, canvasObj) {
                 // ctx.fillStyle = 'black';
                 // ctx.rect(sq.x, sq.y, sq.size, sq.size)
             }
-            else if(type === 'ninjase'){
-                const ninjaImg = new Image()
-                ninjaImg.src = ninja_path
-                ctx.drawImage(ninjaImg, sq.x, sq.y, sq.size, sq.size)
-            }
             else if(type === 'key'){
                 //var color = parsecell.color
                 ctx.beginPath()
@@ -114,6 +120,7 @@ export function redrawCanvas(model, canvasObj) {
 
     showAvailable(model.puzzle, moves, ctx);
     showSelected(model.puzzle, ctx);
+    showNinjaSse(model.puzzle, ctx);
     
     // // goes through the list of moves
     // for(let move of moves){

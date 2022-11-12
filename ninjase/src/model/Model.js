@@ -42,7 +42,7 @@ export class Puzzle {
         this.selected = null;
 
         // this is where you would create the nr x nc Cell objects that you need.
-        // OPTION 1: Create what looks like a 2D array this.cells[R][C]
+        // this could go into a initialize function
         this.cells = []
         for (let r = 0; r < numRow; r++) { 
             this.cells[r] = []; 
@@ -51,8 +51,6 @@ export class Puzzle {
             }
         }
 
-        // set ninjase cell
-        this.cells[this.ninjase.row][this.ninjase.column].type = "ninjase";
         // set selectedCell
         this.selected = this.cells[this.ninjase.row][this.ninjase.column];
 
@@ -82,6 +80,10 @@ export class Puzzle {
         return piece === this.selected;
     }
 
+    /**
+     * Return a list of available moves
+     * @returns an array of available moves consisting {row, column, direction}
+     */
     availableMoves(){
         let moves = [];
         // ninjase coordinate is the current position
@@ -110,16 +112,30 @@ export class Puzzle {
         return moves;
     }
     
-    // exclude doors, walls, or border
+    /**
+     * Check if the given cell is available
+     * @param {int} row - row coordinate of the cell
+     * @param {int} col - col coordinate of the cell
+     * @returns Boolean
+     */
     available(row, col){
-        let c = this.cells[row][col];
+
         // unavailable if cell is out-of-bound
-        if(row < 0 || row > this.numRow || col < 0 || col > this.numCol || c.type === "wall"){
+        if(row < 0 || row > this.numRow - 1 || col < 0 || col > this.numCol - 1 || this.cells[row][col].type === "wall"){
+            //console.log("unavailable")
             return false;
         }
-        // unavailable if cell is a wall or a door
-        if(c.type === "door" && this.keyHolding === "none"){
-            return false;
+        // If cell is a door
+        // - doesn't have key -> false
+        // - have key but wrong color -> false
+        if(this.cells[row][col].type === "door"){
+            console.log("Cell is a door: Do we have the right key?")
+            if(this.keyHolding === "none"){
+                console.log("We don't have the key :(")
+                return false;}
+            else if(this.keyHolding!== this.cells[row][col].color){
+                console.log("We have key! but wrong color :(")
+                return false;}
         }
         return true;
     }
@@ -149,17 +165,76 @@ export class Puzzle {
         console.log("picked up key: ", color)
     }
 
+    /**
+     * Move selected cell with the given direction
+     * @param {String} direction 
+     */
     moveSelected(direction){
+        let nextSelected = null;
+        if(direction === "up"){nextSelected = {"row": this.selected.row - 1, "column": this.selected.column}}
+        else if(direction === "down"){nextSelected = {"row": this.selected.row + 1, "column": this.selected.column}}
+        else if(direction === "left"){nextSelected = {"row": this.selected.row, "column": this.selected.column - 1}}
+        else if(direction === "right"){nextSelected = {"row": this.selected.row, "column": this.selected.column + 1}}
         // check if direction is available 
         let moveList = this.availableMoves();
         console.log("move list = ", moveList)
         for(let move of moveList){
-            if(move.direction === direction){
+            if(move.row === nextSelected.row && move.column === nextSelected.column){
                 this.selected = this.cells[move.row][move.column]; // update selected
                 break;
             }
         }
     }
+
+    /**
+     * Move ninjase to the selected cell
+     */
+    moveNinjase(){
+        // get selected cell
+        let selectedCell = this.selected
+        // update ninjase location to it
+        this.ninjase.row = selectedCell.row
+        this.ninjase.column = selectedCell.column
+
+        // if new location is an unlocked door
+        // clear cell property of door
+        if(this.cells[selectedCell.row][selectedCell.column].type === 'door'){
+            this.cells[selectedCell.row][selectedCell.column].type = 'empty'
+            this.cells[selectedCell.row][selectedCell.column].color = null;
+            this.keyHolding = null;
+        }
+
+        if(this.allDoorUnlocked()){
+            console.log("ALL DOOR UNLOCKED!")
+        }
+    }
+
+    pickUpKey(){
+        // check where is ninjase currently at
+        let ninjaseCell = this.cells[this.ninjase.row][this.ninjase.column]
+        console.log("Checking if there is key at ", ninjaseCell)
+        // check if there is a key
+        let isKey = ninjaseCell.type === "key"
+        // let needDropKey = this.keyHolding!==null;
+        console.log("is key? ", isKey)
+        if(isKey){
+            this.keyHolding = ninjaseCell.color                              // Set keyHolding to color
+            this.cells[ninjaseCell.row][ninjaseCell.column].type = "empty"   // Remove key type from cell
+            this.cells[ninjaseCell.row][ninjaseCell.column].color = null;    // Remove key color from cell
+        }
+    }
+
+    allDoorUnlocked(){
+        for (let r = 0; r < this.numRow; r++) {  
+            for (let c = 0; c < this.numCol; c++) {
+                if(this.cells[r][c].type === 'door'){
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
     copy() {
         // creating new object for cloning
         let puzzleCopy = new Puzzle(this.numRow, this.numCol, this.ninjase, this.wall, this.door, this.key);   
@@ -219,14 +294,14 @@ export class Model {
      * Copy a model with the given information
      * @returns {Model} - a new Model with the given information
      */
-     copy() {
+    copy() {
         let modelCopy = new Model(this.level);                 
-        modelCopy.numRow = this.rows
-        modelCopy.numCol = this.columns
-        modelCopy.ninjase = this.ninjase
-        modelCopy.wall = this.walls
-        modelCopy.door = this.doors
-        modelCopy.key = this.keys
+        //modelCopy.numRow = this.numRow
+        //modelCopy.numCol = this.numCol
+        //modelCopy.ninjase = this.ninjase
+        //modelCopy.wall = this.wall
+        //modelCopy.door = this.door
+        //modelCopy.key = this.key
         modelCopy.puzzle = this.puzzle.copy();
         return modelCopy;
     }
