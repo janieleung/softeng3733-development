@@ -1,4 +1,5 @@
 export const level1 = {
+    "level": 1,
     "rows" : 5,
     "columns" : 4,
     "ninjase" :  { "row":2, "column":0 },
@@ -23,6 +24,7 @@ export const level1 = {
   }
 
 export const level2 = {
+    "level": 2,
     "rows" : 3,
     "columns" : 4,
     "ninjase" :  { "row":1, "column":0 },
@@ -44,6 +46,7 @@ export const level2 = {
   }
   
   export const level3 = {
+    "level": 3,
     "rows" : 2,
     "columns" : 5,
     "ninjase" :  { "row":0, "column":0 },

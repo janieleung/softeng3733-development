@@ -37,7 +37,7 @@ export function showAvailable(puzzle, moves, ctx){
 
 export function showSelected(puzzle, ctx){
     let selectedCell = puzzle.selected;
-    console.log("selected cell = ", selectedCell)
+    // console.log("selected cell = ", selectedCell)
     let sq = computeSquare(selectedCell)
     ctx.beginPath()
     ctx.lineWidth = 5
@@ -51,7 +51,7 @@ export function showNinjaSse(puzzle, ctx){
     let ninjase = puzzle.ninjase
     let ninjaseCell = puzzle.cells[ninjase.row][ninjase.column]
     let sq = computeSquare(ninjaseCell)
-    console.log("Ninja-Se is at ", ninjaseCell)
+    // console.log("Ninja-Se is at ", ninjaseCell)
     const ninjaImg = new Image()
     ninjaImg.src = ninja_path
     ctx.drawImage(ninjaImg, sq.x, sq.y, sq.size, sq.size) 
@@ -61,6 +61,7 @@ export function showNinjaSse(puzzle, ctx){
 export function redrawCanvas(model, canvasObj) {
     console.log("redrawing canvas....")
     console.log("model = ", model)
+    console.log("KEY: ", model.puzzle.keyHolding)
     const ctx = canvasObj.getContext('2d');
     ctx.clearRect( 0,0, canvasObj.width, canvasObj.height);  
    
@@ -89,8 +90,6 @@ export function redrawCanvas(model, canvasObj) {
                 ctx.fillStyle = 'black'
                 ctx.fillRect(sq.x, sq.y, sq.size, sq.size)
                 ctx.stroke()
-                // ctx.fillStyle = 'black';
-                // ctx.rect(sq.x, sq.y, sq.size, sq.size)
             }
             else if(type === 'key'){
                 //var color = parsecell.color

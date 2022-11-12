@@ -38,8 +38,10 @@ export class Puzzle {
         this.wall = wall;
         this.door = door;
         this.key = key;
-        this.keyHolding = "none";
+        this.keyHolding = null;
         this.selected = null;
+        this.moveCounter = 0;
+        this.escaped = false;
 
         // this is where you would create the nr x nc Cell objects that you need.
         // this could go into a initialize function
@@ -129,12 +131,12 @@ export class Puzzle {
         // - doesn't have key -> false
         // - have key but wrong color -> false
         if(this.cells[row][col].type === "door"){
-            console.log("Cell is a door: Do we have the right key?")
-            if(this.keyHolding === "none"){
-                console.log("We don't have the key :(")
+            // console.log("Cell is a door: Do we have the right key?")
+            if(this.keyHolding === null){
+                // console.log("We don't have the key :(")
                 return false;}
             else if(this.keyHolding!== this.cells[row][col].color){
-                console.log("We have key! but wrong color :(")
+                // console.log("We have key! but wrong color :(")
                 return false;}
         }
         return true;
@@ -156,15 +158,6 @@ export class Puzzle {
         return false;
     }
     
-    /**
-     * Pick up a key and set the current key holding to the given color
-     * @param {*} color - color of the holding key
-     */
-    pickUpKey(color){
-        this.keyHolding = color;
-        console.log("picked up key: ", color)
-    }
-
     /**
      * Move selected cell with the given direction
      * @param {String} direction 
@@ -192,36 +185,60 @@ export class Puzzle {
     moveNinjase(){
         // get selected cell
         let selectedCell = this.selected
-        // update ninjase location to it
-        this.ninjase.row = selectedCell.row
-        this.ninjase.column = selectedCell.column
 
-        // if new location is an unlocked door
-        // clear cell property of door
-        if(this.cells[selectedCell.row][selectedCell.column].type === 'door'){
-            this.cells[selectedCell.row][selectedCell.column].type = 'empty'
-            this.cells[selectedCell.row][selectedCell.column].color = null;
-            this.keyHolding = null;
+        if(this.ninjase.row !== selectedCell.row || this.ninjase.column !== selectedCell.column)
+        {
+            // update ninjase location to it
+            this.ninjase.row = selectedCell.row
+            this.ninjase.column = selectedCell.column
+
+            // if new location is an unlocked door
+            // clear cell property of door
+            if(this.cells[selectedCell.row][selectedCell.column].type === 'door'){
+                this.cells[selectedCell.row][selectedCell.column].type = 'empty'
+                this.cells[selectedCell.row][selectedCell.column].color = null;
+                this.keyHolding = null;
+            }
+            this.moveCounter++;
+            if(this.allDoorUnlocked()){
+                console.log("ALL DOOR UNLOCKED!")
+                this.escaped = true;
+            }
         }
 
-        if(this.allDoorUnlocked()){
-            console.log("ALL DOOR UNLOCKED!")
-        }
+
     }
 
     pickUpKey(){
+        console.log("----PICKING UP KEY-----")
+        this.moveCounter++;
         // check where is ninjase currently at
         let ninjaseCell = this.cells[this.ninjase.row][this.ninjase.column]
-        console.log("Checking if there is key at ", ninjaseCell)
+        // console.log("Checking if there is key at ", ninjaseCell)
         // check if there is a key
         let isKey = ninjaseCell.type === "key"
-        // let needDropKey = this.keyHolding!==null;
+        let previouslyKeyHolding = this.keyHolding
         console.log("is key? ", isKey)
         if(isKey){
+            console.log("color is ", ninjaseCell.color)
             this.keyHolding = ninjaseCell.color                              // Set keyHolding to color
-            this.cells[ninjaseCell.row][ninjaseCell.column].type = "empty"   // Remove key type from cell
+            this.cells[ninjaseCell.row][ninjaseCell.column].type = 'empty';   // Remove key type from cell
             this.cells[ninjaseCell.row][ninjaseCell.column].color = null;    // Remove key color from cell
+            
+            console.log("previousKeyHolding: ", previouslyKeyHolding)
+            console.log("Is ninjase holding key?: ", previouslyKeyHolding !== null)
+            if(previouslyKeyHolding != null){
+                this.dropKey(previouslyKeyHolding);
+            }
         }
+        console.log("------------------")
+    }
+
+    dropKey(color){
+        console.log("dropping key: ", color)
+        // Update cell type and color to the dropped key
+        this.cells[this.ninjase.row][this.ninjase.column].type = 'key'        
+        this.cells[this.ninjase.row][this.ninjase.column].color = color;    
     }
 
     allDoorUnlocked(){
@@ -239,6 +256,8 @@ export class Puzzle {
         // creating new object for cloning
         let puzzleCopy = new Puzzle(this.numRow, this.numCol, this.ninjase, this.wall, this.door, this.key);   
         puzzleCopy.keyHolding = this.keyHolding;    // set keyHolding field
+        puzzleCopy.moveCounter = this.moveCounter;
+        puzzleCopy.escaped = this.escaped;
         
         puzzleCopy.cells = [];      // set cells field by cloning each cell
 
@@ -255,40 +274,22 @@ export class Puzzle {
     }
 }
 
-export class MoveType {
-    constructor(dr, dc) {
-        this.deltar = dr;
-        this.deltac = dc;
-    }
-    
-    static parse(s) {
-        if ((s === "down")  || (s === "Down"))   { return Down; }
-        if ((s === "up")    || (s === "Up"))     { return Up; }
-        if ((s === "left")  || (s === "Left"))   { return Left; }
-        if ((s === "right") || (s === "Right"))  { return Right; }
-        
-        return NoMove;
-    }
-}
-
-export const Down = new MoveType(1, 0, "down");
-export const Up = new MoveType(-1, 0, "up");
-export const Left = new MoveType(0, -1, "left");
-export const Right = new MoveType(0, 1, "right");
-export const NoMove = new MoveType(0, 0, "*");  // no move is possible
-
 // Model knows the level (you need 3). Knows the Puzzle
 export class Model {
-    constructor(level) {
-        this.level = level
+    constructor(levelinfo) {
+        this.level = levelinfo
         
-        let numRow = level.rows
-        let numCol = level.columns
-        let ninjase = level.ninjase
-        let wall = level.walls
-        let door = level.doors
-        let key = level.keys
+        let numRow = this.level.rows
+        let numCol = this.level.columns
+        let ninjase = this.level.ninjase
+        let wall = this.level.walls
+        let door = this.level.doors
+        let key = this.level.keys
         this.puzzle = new Puzzle(numRow, numCol, ninjase, wall, door, key)
+    }
+
+    ninjaseHasEscaped(){
+        return this.puzzle.escaped;
     }
     /**
      * Copy a model with the given information
@@ -296,12 +297,7 @@ export class Model {
      */
     copy() {
         let modelCopy = new Model(this.level);                 
-        //modelCopy.numRow = this.numRow
-        //modelCopy.numCol = this.numCol
-        //modelCopy.ninjase = this.ninjase
-        //modelCopy.wall = this.wall
-        //modelCopy.door = this.door
-        //modelCopy.key = this.key
+
         modelCopy.puzzle = this.puzzle.copy();
         return modelCopy;
     }

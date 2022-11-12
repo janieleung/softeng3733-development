@@ -1,7 +1,7 @@
 export const layout = {
     canvasPos : {
         position: "absolute",
-        left: 700,
+        left: 650,
         top: 150,
       },
     
@@ -22,11 +22,26 @@ export const layout = {
 
     victory: { 
         position: "absolute",
-        left:500,
-        top:10,
-        color:"yellow",
-        backgroundColor: "#320453",
-        width:150,
+        left: 800,
+        top:50,
+        backgroundColor: "#a349a4",
+        color: "white",
+        textAlign: "center",
+        width:200,
+        paddingTop: 15,
+        height: 35,
+      },
+    
+    stuck: { 
+        position: "absolute",
+        left: 800,
+        top:50,
+        backgroundColor: "#E34234",
+        color: "white",
+        textAlign: "center",
+        width:200,
+        paddingTop: 15,
+        height: 35,
       },
 
     buttons: { 
@@ -67,9 +82,9 @@ export const layout = {
         height: 50,
       },
 
-      chooseLevelButton: {
+      levelDropdown: {
         position: "absolute",
-        left: 500,
+        left: 450,
         top: 250,
         width: 150,
         height: 50,
@@ -77,7 +92,7 @@ export const layout = {
 
       resetLevelButton: {
         position: "absolute",
-        left: 500,
+        left: 450,
         bottom: 345,
         width: 150,
         height: 50,
@@ -114,14 +129,13 @@ export const layout = {
 
       levelDisplay: {
         position: "absolute",
-        left: 475,
+        left: 425,
         top: 160,
         width: 200,
-        height: 35, 
+        height: 50, 
         backgroundColor: "#a349a4",
         color: "white",
         textAlign: "center",
-        paddingTop: 15,
         fontFamily: "verdana",
       }
 

@@ -18,3 +18,8 @@ export function pickUpKey(model){
     model.puzzle.pickUpKey();
     return model.copy();
 }
+
+// Use Case 5:: Reset Level
+export function resetLevel(model){
+    return model.reset(model.level);
+}
