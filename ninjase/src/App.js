@@ -90,6 +90,7 @@ function App() {
 
       { model.ninjaseHasEscaped() ? (<label style={layout.victory}>Ninja-Se has escaped!</label>) : (<label style={layout.stuck}>Ninja-Se is still stuck... :-&lt;</label>) }
       
+
       <button style={layout.upbutton}     onClick={(e) => selectMoveHandler("up")}>^</button>
       <button style={layout.leftbutton}   onClick={(e) => selectMoveHandler("left")}>&lt;</button>
       <button style={layout.downbutton}   onClick={(e) => selectMoveHandler("down")}>v</button>
@@ -107,6 +108,7 @@ function App() {
       <button style={layout.moveButton} onClick={(e) => moveHereHandler()}>Move Here</button>
       <button style={layout.pickKeyButton} onClick={(e) => pickUpKeyHandler()}>Pick Up Key</button>
       <label style={layout.moveCounter}>{"Move Counter: " + model.puzzle.moveCounter}</label>
+      <label style={layout.keyDisplay}>{"Holding key: " + model.puzzle.keyHolding}</label>
       
     </main>
   );

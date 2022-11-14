@@ -1,6 +1,4 @@
-import ninja_path from './ninja-se.png'
-import { availableMoves } from '../model/Model.js';
-// redraw the Puzzle so I can see it
+import ninja_path from './ninja-se.webp'
 
 // Scaling Constants for Canvas
 var BOXSIZE = 100;
@@ -51,17 +49,17 @@ export function showNinjaSse(puzzle, ctx){
     let ninjase = puzzle.ninjase
     let ninjaseCell = puzzle.cells[ninjase.row][ninjase.column]
     let sq = computeSquare(ninjaseCell)
-    // console.log("Ninja-Se is at ", ninjaseCell)
     const ninjaImg = new Image()
     ninjaImg.src = ninja_path
     ctx.drawImage(ninjaImg, sq.x, sq.y, sq.size, sq.size) 
+    console.log("drawing ninjase")
 }
 
 /** Redraw entire canvas from model. */
 export function redrawCanvas(model, canvasObj) {
     console.log("redrawing canvas....")
-    console.log("model = ", model)
-    console.log("KEY: ", model.puzzle.keyHolding)
+    // console.log("model = ", model)
+    // console.log("KEY: ", model.puzzle.keyHolding)
     const ctx = canvasObj.getContext('2d');
     ctx.clearRect( 0,0, canvasObj.width, canvasObj.height);  
    
@@ -115,22 +113,10 @@ export function redrawCanvas(model, canvasObj) {
     }
     
     let moves = model.puzzle.availableMoves();
-    //console.log(moves)
 
     showAvailable(model.puzzle, moves, ctx);
     showSelected(model.puzzle, ctx);
     showNinjaSse(model.puzzle, ctx);
     
-    // // goes through the list of moves
-    // for(let move of moves){
-    //     let cell = model.puzzle.cells[move.row][move.column]  // get cell
-    //     let sq = computeSquare(cell)    // compute square
-    //     // ctx.fillRect(sq.x, sq.y, sq.size, sq.size)  // draw
-        
-    //     ctx.beginPath()
-    //     ctx.lineWidth = 5
-    //     ctx.strokeStyle = `rgb(176, 212, 171)`
-    //     ctx.rect(sq.x, sq.y, sq.size, sq.size)
-    //     ctx.stroke()
-    // }
+
 }

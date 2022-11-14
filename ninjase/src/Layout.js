@@ -137,6 +137,19 @@ export const layout = {
         color: "white",
         textAlign: "center",
         fontFamily: "verdana",
+      },
+
+      keyDisplay: {
+        position: "absolute",
+        left: 425,
+        top: 220,
+        width: 200,
+        height: 35,
+        paddingTop: 15, 
+        backgroundColor: "#a349a4",
+        color: "white",
+        textAlign: "center",
+        fontFamily: "verdana",
       }
 
 }

@@ -170,7 +170,6 @@ export class Puzzle {
         else if(direction === "right"){nextSelected = {"row": this.selected.row, "column": this.selected.column + 1}}
         // check if direction is available 
         let moveList = this.availableMoves();
-        console.log("move list = ", moveList)
         for(let move of moveList){
             if(move.row === nextSelected.row && move.column === nextSelected.column){
                 this.selected = this.cells[move.row][move.column]; // update selected
