@@ -117,6 +117,4 @@ export function redrawCanvas(model, canvasObj) {
     showAvailable(model.puzzle, moves, ctx);
     showSelected(model.puzzle, ctx);
     showNinjaSse(model.puzzle, ctx);
-    
-
 }

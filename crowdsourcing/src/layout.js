@@ -4,11 +4,54 @@ export const layout = {
         left: 650,
         top: 150,
       },
+
+    sidebar : {
+        position: "relative",
+        display: "grid", 
+        gridTemplateColumns: "4fr 1fr", 
+        gridGap: 80, 
+        padding:100, 
+    },
+
+    button1: {
+        position: "absolute",
+        top: 100,
+        width: 200,
+        height: 50,
+    },
     
+    button2: {
+        position: "absolute",
+        top: 170,
+        width: 200,
+        height: 50,
+    },
+
+    button3: {
+        position: "absolute",
+        top: 240,
+        width: 200,
+        height: 50,
+    },
+
+    projectDetails:{
+        paddingTop: 10,
+        paddingLeft: 10,
+    },
+
     Appmain : {
       backgroundColor: "#320453",
       height: "100vh",
       width: "100vw",
+    },
+
+    projectCanvas : {
+        backgroundColor: "#E34234",
+        paddingTop: 100,
+        paddingLeft: 15,
+        paddingRight: 15,
+        height: "20vh",
+        width: "20vw",
     },
 
     text: { 
@@ -18,18 +61,6 @@ export const layout = {
         color:"yellow",
         backgroundColor: "#320453",
         width:150,
-      },
-
-    victory: { 
-        position: "absolute",
-        left: 800,
-        top:50,
-        backgroundColor: "#a349a4",
-        color: "white",
-        textAlign: "center",
-        width:200,
-        paddingTop: 15,
-        height: 35,
       },
     
     stuck: { 
@@ -115,11 +146,11 @@ export const layout = {
       },
 
       moveCounter: {
-        position: "absolute",
-        right: 475,
-        top: 160,
+        // position: "absolute",
+        // right: 475,
+        // top: 160,
         width: 200,
-        height: 35, 
+        height: 100, 
         backgroundColor: "#a349a4",
         color: "white",
         textAlign: "center",

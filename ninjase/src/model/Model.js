@@ -73,15 +73,7 @@ export class Puzzle {
             this.cells[k.row][k.column].color = k.color;
         }
     }
-
-    select(piece) {
-        this.selected = piece;
-    }
     
-    isSelected(piece) {
-        return piece === this.selected;
-    }
-
     /**
      * Return a list of available moves
      * @returns an array of available moves consisting {row, column, direction}
@@ -290,6 +282,9 @@ export class Model {
     ninjaseHasEscaped(){
         return this.puzzle.escaped;
     }
+
+
+
     /**
      * Copy a model with the given information
      * @returns {Model} - a new Model with the given information
