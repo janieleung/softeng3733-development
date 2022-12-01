@@ -13,23 +13,30 @@ export const layout = {
         padding:100, 
     },
 
+    button0: {
+      position: "absolute",
+      top: 100,
+      width: 200,
+      height: 50,
+  },
+
     button1: {
         position: "absolute",
-        top: 100,
+        top: 170,
         width: 200,
         height: 50,
     },
     
     button2: {
         position: "absolute",
-        top: 170,
+        top: 240,
         width: 200,
         height: 50,
     },
 
     button3: {
         position: "absolute",
-        top: 240,
+        top: 310,
         width: 200,
         height: 50,
     },
