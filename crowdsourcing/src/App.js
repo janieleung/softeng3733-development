@@ -1,450 +1,850 @@
 import React from 'react';
 import { layout } from './layout.js';
 import Modal from "./Component/Modal";
-import axios from "axios";
-
-const list = [
-  {
-    id: 0,
-    name: 'NinjaSe 2.0',
-    type: 'Game',
-    story: 'Bring NinjaSe to the masses',
-    designer: 'George H',
-    currentAmt: 0,
-    goalAmt: '7000',
-    deadline: '12-16-2022',
-    pledges: [
-      {
-        amount: 0,
-        description: 'description here'
-      }
-    ]
-  },
-  {
-    id: 1,
-    name: 'Wordy5',
-    type: 'Game',
-    story: 'Another way to waste time',
-    designer: 'Jen S',
-    currentAmt: 0,
-    goalAmt: '5000',
-    deadline: '12-01-2022',
-  }
-];
-
-const instancep1 = axios.create({
-  baseURL: 'https://sakv15k9hl.execute-api.us-east-1.amazonaws.com/Prod/'
-});
-
-const instancep2 = axios.create({
-  baseURL: ' https://nxs9op302e.execute-api.us-east-1.amazonaws.com/Prod'
-});
-
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faBars, faSearch } from '@fortawesome/free-solid-svg-icons';
+// import axios from "axios";
+import { createPledge, createProject, deleteProjectAsDesigner, launchProject, listProjectAsDesigner, registerDesigner, viewProjectAsDesigner, deletePledge, reviewProjectActivity } from './Lambda/Designer';
+import { addFund, claimPledge, registerSupporter, reviewSupporterActivity, searchProject, viewPledge, viewProjectAsSupporter } from './Lambda/Supporter.js';
+import { deleteProjectAsAdmin, listProjectAsAdmin, userLogin } from './Lambda/Admin.js';
 
 function App() {
-  const refs = list.reduce((acc, value) => {
-    acc[value.id] = React.createRef();
-    return acc;
-  }, {});
-
   const [dbData, setdbData] = React.useState([]);
 
   // 0: Register designer, 1: Register Supporter, 2: Create Project, 3: Create Pledge, 4: Admin LogIn
   const [modalScreen, setModalScreen] = React.useState(0);
   const [showModal, setModal] = React.useState(false);  // true: show modal, false: hide modal
 
-  const [loggedin, setLoggedIn] = React.useState('visitor');  // designer, supporter, admin, visitor
+  const [role, setRole] = React.useState('visitor');  // designer, supporter, admin, visitor
 
   // designer states
-  const [inputRegDesigner, setinputRegDesigner] = React.useState('');
-  const [inputRegDesignerPwd, setInputRegDesignerPwd] = React.useState('');
-  const [designerView, setDesignerView] = React.useState(0);    // 0 : no project, 1: brief project, 2: project viewhttps://git-codecommit.us-east-1.amazonaws.com/v1/repos/crowdsourcing
-  const [currDesigner, setCurrDesigner] = React.useState(''); // TODO: Identify designer 
-  const [viewProjectName, setViewProjectName] = React.useState('NinjaSe 2.0');      // View project based on the name of the project
+  const [designerView, setDesignerView] = React.useState(0);    // 0 : no project, 1: brief project, 2: project view 
+  const [currAcctName, setCurrAcctName] = React.useState(''); // TODO: Identify designer 
+  const [currAcctEmail, setCurrAcctEmail] = React.useState(''); // TODO: Identify designer 
   const [pjPledge, setPjPledge] = React.useState([]);
+  const [pjLaunched, setPjLaunched] = React.useState(1);
+
+  // supporter states 
+  const [supportView, setSupporterView] = React.useState(0); // 0: no project, 1: search results, 2: project view
+  const [budget, setBudget] = React.useState(0);
 
   // admin states
   const [adminView, setAdminView] = React.useState(0);    // 0 : no project, 1: all project
-  const [inputLogin, setInputLogin] = React.useState('');
-  const [inputPwd, setInputPwd] = React.useState('');
-
-  // supporter states
-  const [inputRegSupporter, setinputRegSupporter] = React.useState('');
-  const [inputRegSupporterPwd, setInputRegSupporterPwd] = React.useState('');
 
   // Register Window
   const showRegModal = id => {
-    setModalScreen(id);                       // Tell Modal which screen to display
+    setModalScreen(id);       // Tell Modal which screen to display
     setModal(!showModal);     // Show Modal
   };
 
   // Use Case: Register Stuff into Database
   const handleRegister = id => {
-    // id = 0 = designer
+    // Register Designer: id = 0
     if (id === 0) {
-      console.log("registering designer: ", inputRegDesigner, inputRegDesignerPwd);
-      // TODO: LAMBDA FUNCTION REGISTER DESIGNER
-      let msg = {}
-      msg["name"] = inputRegDesigner;
-      msg["email"] = inputRegDesignerPwd;
-      let value = JSON.stringify(msg)
-      let data = { 'body': value }
-
-      instancep1.post("/registerDesigner", data)
+      let name = document.getElementById("regUsername").value;
+      let email = document.getElementById("regEmail").value;
+      registerDesigner(name, email)
         .then(function (response) {
           console.log("Designer has been registered");
-          setLoggedIn('designer');
-          setCurrDesigner(inputRegDesigner);
+          setRole('designer');
+          setCurrAcctName(name);
+          setCurrAcctEmail(email);
+          setModal(!showModal);
         })
         .catch(function (error) {
-          console.log("Error: ", error)
+          console.log("Cannot register designer: ", error);
         })
 
-      setinputRegDesigner('');
-      setInputRegDesignerPwd('');
-      setModal(!showModal);
     }
-
-    // id = 1 = supporter
+    // Register Supporter: id = 1
     else if (id === 1) {
-      console.log("registering supporter: ", inputRegSupporter, inputRegSupporterPwd);
-      setLoggedIn('supporter');
-      setinputRegSupporter('');
-      setInputRegSupporterPwd('');
-      setModal(!showModal);
-    }
-    // id = 2 = create project
-    else if (id === 2) {
-      console.log("creating project: ");
-      // TODO: LAMBDA FUNCTION CREATE PROJECT
-      let msg = {}
-      msg["projectName"] = document.getElementById("newProjName").value;
-      msg["story"] = document.getElementById("newProjStory").value;
-      // msg["designerName"] = document.getElementById("newProjDesigner").value;
-      msg["designerName"] = currDesigner;
-      msg["type"] = document.getElementById("newProjGenre").value;
-      msg["goal"] = document.getElementById("newProjGoal").value;
-      msg["deadline"] = document.getElementById("newProjDeadline").value;
-      let value = JSON.stringify(msg)
-      let data = { 'body': value }
+      let name = document.getElementById("regUsername").value;
+      let email = document.getElementById("regEmail").value;
+      registerSupporter(name, email)
+        .then(function (response) {
+          console.log("Supporter has been registered");
+          setRole('supporter');
+          setCurrAcctName(name);  //TODO: might be better to turn this into current account name
+          setCurrAcctEmail(email);
+          setModal(!showModal);
+        })
+        .catch(function (error) {
+          console.log("Cannot register supporter: ", error);
+        })
+      // TODO: handle response, e.g. error handling
 
-      // post instance
-      instancep1.post("/createProject", data)
+    }
+    // Create Project: id = 2 
+    else if (id === 2) {
+      let projectName = document.getElementById("newProjName").value;
+      let projectStory = document.getElementById("newProjStory").value;
+      let projectType = document.getElementById("newProjGenre").value;
+      let projectGoal = document.getElementById("newProjGoal").value;
+      let projectDeadline = document.getElementById("newProjDeadline").value;
+      createProject(projectName, projectStory, projectType, projectGoal, projectDeadline, currAcctName)
         .then(function (response) {
           console.log("Successfully created project")
+          setModal(!showModal);
+          handleListProject(0);
         })
         .catch(function (error) {
           console.log("Error creating project: ", error)
+          // TODO: handle response, e.g. error handling
         })
-      setModal(!showModal);
+
+
     }
-    // id = 3 = create pledge
+    // Create Pledge: id = 3 
     else if (id === 3) {
-      console.log("creating pledge: ");
-      // TODO: LAMBDA FUNCTION CREATE PLEDGE
-      //const exists = await checkPledgeExists(info.reward, info.amount, info.numMaxSupport, info.projectName, info.supportersName);
-
-      let msg = {}
-      msg["reward"] = document.getElementById("newPledgeReward").value;
-      msg["amount"] = document.getElementById("newPledgeAmt").value;
-      msg["numMaxSupport"] = 10;
-      msg["projectName"] = document.getElementById("pjName").value;
-      msg["supportersName"] = 'NULL';
-      let value = JSON.stringify(msg)
-      let data = { 'body': value }
-
-      // post instance
-      instancep2.post("/createPledge", data)
+      let reward = document.getElementById("newPledgeReward").value;
+      let amount = document.getElementById("newPledgeAmt").value;
+      let numMaxSupport = document.getElementById("newPledgeMaxSupport").value;
+      let projectName = document.getElementById("pjName").value;
+      createPledge(reward, amount, numMaxSupport, projectName)
         .then(function (response) {
-          console.log("Successfully created pledge")
+          console.log("Successfully created pledge");
+          setModal(!showModal);
         })
-        .catch(function (error) {})
-      setModal(!showModal);
+        .catch(function (error) {
+          console.log("Cannot create pledge: ", error)
+        })
+
     }
-    // id = 4 = admin login
+    // Log In: id = 4
     else if (id === 4) {
-      
-      if(inputLogin ==='admin'){
-        console.log("logging in as admin: ", inputLogin, inputPwd);
-        setLoggedIn('admin');
+      let name = document.getElementById("loginName").value;
+      let email = document.getElementById("loginEmail").value;
+      let loginRole;
+      userLogin(name, email)
+        .then(function (response) {
+          loginRole = response.data.result;
+          console.log("Successfully log in as a ", loginRole, " , name:", name);
+          setRole(loginRole);
+          setCurrAcctName(name);
+          setCurrAcctEmail(email);
+          setModal(!showModal);
+        })
+        .catch(function (error) {
+          console.log("Cannot log in ", error)
+        })
+    }
+    // Add Fund: id = 5
+    else if (id === 5) {
+      let name = document.getElementById("loginName").value;
+      let email = document.getElementById("loginEmail").value;
+      let fund = document.getElementById('fund').value;
+      if (fund === '') {
+        console.log('Add fund: Amount is empty')
+        document.getElementById('addFundError').value = "Amount cannot be empty!";
       }
-      else{
-        console.log("logging in as designer: ", inputLogin, inputPwd);
-        setLoggedIn('designer');
-        setCurrDesigner(inputLogin);
+      else {
+        // console.log("Adding fund to account: amount: ", fund, ', name: ', name, ', email: ', email)
+        document.getElementById('addFundError').value = "";
+        // TODO: LAMBDA FUNCTION: ADD FUND
+        addFund(name, email.fund)
+          .then(function (response) {
+            console.log("Successfully added fund as a ");
+            setModal(!showModal);
+          })
+          .catch(function (error) {
+            console.log("Cannot add fund ", error)
+          })
+        setModal(!showModal);
       }
-      setInputLogin('');
-      setInputPwd('');
-      setModal(!showModal);
+
+
+    }
+    // Direct Support from Supporter: id = 6
+    else if (id === 6) {
+      let name = document.getElementById("loginName").value;
+      let email = document.getElementById("loginEmail").value;
+      let projectName = document.getElementById('pjName').value;
+      let directSupport = document.getElementById('directsupport').value;
+      if (directSupport === '') {
+        console.log('Direct Support: Amount is empty')
+        document.getElementById('directsupportError').value = "Amount cannot be empty!";
+      }
+      else {
+        document.getElementById('directsupportError').value = "";
+        // TODO: LAMBDA FUNCTION: DIRECT SUPPORT
+        directSupport(name, email, directSupport, projectName)
+          .then(function (response) {
+            console.log("Successfully given a direct support ");
+            setModal(!showModal);
+          })
+          .catch(function (error) {
+            console.log("Cannot give direct support ", error)
+          })
+        setModal(!showModal);
+      }
     }
 
   };
 
-  // Use Case: Create Project
+  //-----------Designer-------------
+  // Create Project: Designer
   const handleCreateProject = e => {
     setModalScreen(2);
     setModal(!showModal);
   }
 
-  // Use Case: List Project
+  // List Project: Designer, Admin
   const handleListProject = id => {
     // id = 0 = designer
     if (id === 0) {
       setDesignerView(1);
-      // TODO: LAMBDA FUNCTION LIST PROJECT AS DESIGNER
-      let msg = {}
-      msg["designerName"] = currDesigner;
-      let value = JSON.stringify(msg)
-      let data = { 'body': value }
-      instancep1.post("/listProject", data)
+      listProjectAsDesigner(currAcctName)
         .then(function (response) {
-          var output_list = response.data.result;
+          console.log("Designer - Listing project: ", response)
+          let output_list = response.data.result;
           setdbData(output_list);
         })
-        .catch(function (error) { })
-
-
+        .catch(function (error) {
+          console.log("Cannot list project as desginer: ", error)
+        })
     }
     // id = 2 = admin
     else if (id === 2) {
       setAdminView(1);
-      // TODO: LAMBDA FUNCTION LIST PROJECT AS ADMIN
-      let msg = {}
-      let value = JSON.stringify(msg)
-      let data = { 'body': value }
-      instancep2.post("/listProjects", data)
+      listProjectAsAdmin()
         .then(function (response) {
-          var output_list = response.data.result;
+          console.log("Admin - Listing project:", response)
+          let output_list = response.data.result;
           setdbData(output_list);
         })
-        .catch(function (error) { })
+        .catch(function (error) {
+          console.log("Cannot list project as admin: ", error)
+        })
     }
   }
 
+  const calculateSupporter = pledgeList => {
+    let currentAmt = 0;
+    pledgeList.forEach(function (pledge) {
+      currentAmt += pledge.numOfSupport;
+    });
+    return currentAmt;
+  }
+
+  const calculateCurrent = pledgeList => {
+    let currentAmt = 0;
+    pledgeList.forEach(function (pledge) {
+      let amtPerEntry = pledge.amount * pledge.numOfSupport;
+      currentAmt += amtPerEntry;
+    });
+    return currentAmt;
+  }
+
+  // View Project: Designer
   const handleViewProject = name => {
-    // Got name of the project in "name"
-    setViewProjectName(name);
-    // set desginer view to 2
     setDesignerView(2);
-    // TODO: LAMBDA FUNCTION VIEW PROJECT
-    let msg = {}
-    msg["projectName"] = name;
-    console.log("View Project: CURR PROJECT = ", name);
-    let value = JSON.stringify(msg)
-    let data = { 'body': value }
-
-    instancep2.post("/viewProject", data)
+    viewProjectAsDesigner(name)
       .then(function (response) {
-        console.log("View Project: OUTPUT PROJECT = ", response.data.result);
-        var output = response.data.result
-
+        let output = response.data.result;
+        console.log("Viewing Project now", output)
         document.getElementById("pjName").value = output.project.projectName;
         document.getElementById("pjType").value = output.project.type;
         document.getElementById("pjStory").value = output.project.story;
         document.getElementById("pjDesigner").value = output.project.designerName;
-        document.getElementById("pjCurrAmt").value = "0";
+        document.getElementById("pjCurrAmt").value = calculateCurrent(output.pledges);
         document.getElementById("pjGoalAmt").value = output.project.goal;
-        document.getElementById("pjDeadline").value = output.project.deadline;
+        document.getElementById("pjNumSupporter").value = calculateSupporter(output.pledges);
+        document.getElementById("pjDeadline").value = output.project.deadline.substring(0, 10);
+        if (output.project.isLaunched === 1) {
+          document.getElementById("pjLaunch").value = "Launched";
+          setPjLaunched(1);
+        } else {
+          document.getElementById("pjLaunch").value = "Not yet launch";
+          setPjLaunched(0);
+        }
         setPjPledge(output.pledges);
       })
-      .catch(function (error) { })
+      .catch(function (error) {
+        console.log("Cannot view project: ", error)
+      })
 
   }
 
+  // Delete Project: Designer
+  const handleDeleteProject = name => {
+    deleteProjectAsDesigner(name)
+      .then(function (response) {
+        console.log("Project has been deleted")
+        handleListProject(0);   // go back to project list
+      })
+      .catch(function (error) {
+        console.log("Cannot delete project: ", error)
+      })
+  }
+
+  // Launch Project: Designer
+  const handleLaunchProject = name => {
+    launchProject(name)
+      .then(function (response) {
+        console.log("Project has been launch")
+        handleViewProject(name);   // refresh project view
+      })
+      .catch(function (error) {
+        console.log("Cannot launch project: ", error)
+      })
+  }
+
+  // Create Pledge: Designer
   const handleCreatePledge = name => {
     console.log("handleCreatePledge: ", name);
-    
     setModalScreen(3);
-    
     setModal(!showModal);
-    // document.getElementById("currProjName").value = name;
   }
 
-  return (
+  // Delete Pledge: Designer
+  const handleDeletePledge = id => {
+    console.log("Deleting Pledge with ID: ", id);
+    deletePledge(id)
+      .then(function (response) {
+        console.log("Pledge has been deleted")
+      })
+      .catch(function (error) {
+        console.log("Cannot delete pledge: ", error)
+      })
 
-    <div style={layout.sidebar}>
-      {/* VISITOR VIEW */}
-      {loggedin === 'visitor' && (
-        <>
-          {/* Project Window */}
-          <div>
-            <li style={{ height: '750px', width: '800px', border: '1px solid black', backgroundColor: '	#f4cccc' }}></li>
-          </div>
-          <div>
-            {/* Sidebar */}
-            <button type="button" style={layout.button1} onClick={() => showRegModal(0)}> Register as Designer </button>
-            <button type="button" style={layout.button2} onClick={() => showRegModal(1)}> Register as Supporter </button>
-            <button type="button" style={layout.button3} onClick={() => showRegModal(4)}> Log In</button>
-          </div>
-        </>
-      )
+  }
+
+  // Show Pledge Detail: Designer
+  const showPledgeDetail = (pledge, projectName) => {
+    showRegModal(7)
+    viewPledge(pledge.pledgeID, projectName)
+      .then(function (response) {
+        console.log("Viewing Pledge now, response: ", response)
+        let output = response.data.result;
+        let activity = output.activity;
+        document.getElementById("pledgeID").value = output.pledge.pledgeID;
+        document.getElementById("pledgeReward").value = output.pledge.reward;
+        document.getElementById("pledgeAmt").value = '$' + output.pledge.amount;
+        document.getElementById("pledgeCurrSupport").value = output.pledge.numOfSupport;
+        document.getElementById("pledgeMaxSupport").value = output.pledge.numMaxSupport;
+        document.getElementById("pledgeSupporter").value = compileSupporterList(activity);
+      })
+      .catch(function (error) {
+        console.log("Cannot view pledge: ", error)
+      })
+
+  }
+
+  // TODO: Review Project Activity: Designer
+  const handleReviewProject = name => {
+    // 1. Fetch POST request to get project activity
+    // 2. Change Designer View to 3
+    setDesignerView(3);
+    let projectName = document.getElementById("pjName").value = name;
+    reviewProjectActivity(projectName)
+      .then(function (response) {
+        let claimActivity = response.data.claimPledgeActivity;
+        let directSupportList = response.data.directSupport;
+        // DISPLAY INFORMATION
+      })
+      .catch(function (error) {
+        console.log("Cannot review project: ", error)
+      })
+  }
+
+  //-----------Supporter-------------
+  // Search Project: Supporter
+  const handleSearchProject = type => {
+    console.log("Searching Project with these keywords: ", type);
+    searchProject(type)
+      .then(function (response) {
+        console.log("Supporter - Searching project with keyword: ", response)
+        let output_list = response.data.result;
+        setdbData(output_list);
+        setSupporterView(1)
+      })
+      .catch(function (error) {
+        console.log("Cannot search project: ", error)
+      })
+  }
+
+  // View Project: Supporter
+  const handleViewProjectSupporter = name => {
+    setSupporterView(2);  // #1: Change view
+    viewProjectAsSupporter(name)  // #2: Get project detail via POST request
+      .then(function (response) {
+        console.log("Viewing Project now as Supporter", response)
+        let output = response.data.result;  // #3: Display project details from POST request
+        document.getElementById("pjName").value = output.project.projectName;
+        document.getElementById("pjType").value = output.project.type;
+        document.getElementById("pjStory").value = output.project.story;
+        document.getElementById("pjDesigner").value = output.project.designerName;
+        document.getElementById("pjCurrAmt").value = calculateCurrent(output.pledges);
+        document.getElementById("pjGoalAmt").value = output.project.goal;
+        document.getElementById("pjNumSupporter").value = calculateSupporter(output.pledges);
+        document.getElementById("pjDeadline").value = output.project.deadline.substring(0, 10);
+        setPjPledge(output.pledges);  // #4: Set pledge details from POST request
+      })
+      .catch(function (error) {
+        console.log("Cannot view project: ", error)
+      })
+  }
+
+  // Compile the list of supporter
+  const compileSupporterList = activity => {
+    let supporterNameList = "";
+    let toomuch = false;
+    let count = 0;
+    activity.forEach(function (entry) {
+      if (!toomuch) {
+        supporterNameList = supporterNameList.concat(entry.supporterEmail, ", ");
+        count++;
       }
-      {/* DESIGNER VIEW */}
-      {loggedin === 'designer' && (
-        <>
-          {/* Project List View */}
-          <div>
-            {designerView === 1 && (
-              <>
-                {dbData.filter(project => project.designerName === currDesigner).map(item => (
-                  <li key={item.id} ref={refs[item.id]} style={{ height: '120px', width: '800px', border: '1px solid black', backgroundColor: '	#f4cccc' }}>
-                    <div style={layout.projectDetails}>{" Project Name: " + item.projectName}</div>
-                    <div style={layout.projectDetails}>{" Story: " + item.story}</div><p></p>
-                    <button type="button" onClick={() => handleViewProject(item.projectName)}>View Project</button>
-                  </li>
-                ))}
-              </>
-            )
-            }
-            {/* Default View : No Project */}
-            {designerView === 0 && (
-              <>
-                <li style={{ height: '750px', width: '800px', border: '1px solid black', backgroundColor: '	#f4cccc' }}></li>
-              </>
-            )
-            }
-            {/* Project View */}
-            {designerView === 2 && (
-              <>
-                <li style={{ height: '750px', width: '800px', border: '1px solid black', backgroundColor: '	#f4cccc' }}>
-                  <p></p>
-                  Name: <input id="pjName" readOnly /><p></p>
-                  Type: <input id="pjType" readOnly /><p></p>
-                  Story: <input id="pjStory" readOnly /><p></p>
-                  Designer username: <input id="pjDesigner" readOnly /><p></p>
-                  Current Amount: <input id="pjCurrAmt" readOnly /><p></p>
-                  Goal Amount: <input id="pjGoalAmt" readOnly /><p></p>
-                  Deadline: <input id="pjDeadline" readOnly /><p></p>
-                  Pledge: <p></p>
-                  {pjPledge.map(pledge => (
+      if (count === 4) {
+        toomuch = true;
+        supporterNameList = supporterNameList.concat("Et al.... ");
+      }
+    });
+    return supporterNameList;
+  }
+
+  // View Pledge: Supporter
+  const handleViewPledge = (pledgeid, projectName) => {
+    // TODO: Handle View Pledge
+    // 1. setModalScreen(5)
+    // Get pledge information from Lambda function
+    showRegModal(5)
+    viewPledge(pledgeid, projectName)
+      .then(function (response) {
+        console.log("Viewing Pledge now, response: ", response)
+        let output = response.data.result;
+        let activity = output.activity;
+        document.getElementById("pledgeID").value = output.pledge.pledgeID;
+        document.getElementById("pledgeReward").value = output.pledge.reward;
+        document.getElementById("pledgeAmt").value = '$' + output.pledge.amount;
+        document.getElementById("pledgeCurrSupport").value = output.pledge.numOfSupport;
+        document.getElementById("pledgeMaxSupport").value = output.pledge.numMaxSupport;
+        document.getElementById("pledgeSupporter").value = compileSupporterList(activity);
+      })
+      .catch(function (error) {
+        console.log("Cannot view pledge: ", error)
+      })
+
+  }
+
+  // Claim Pledge: Supporter
+  const handleClaimPledge = (pledgeid, projectName) => {
+    // 1. Claim Pledge Lambda Function
+    claimPledge(pledgeid, currAcctName, currAcctEmail, projectName)
+      .then(function (response) {
+        setModalScreen(6);
+      })
+      .catch(function (error) {
+        console.log("Cannot claim pledge: ", error)
+      })
+  }
+
+  // TODO: Review Supporter Activity: Supporter
+  const handleReviewSupporter = (name, email) => {
+    setSupporterView(3);
+    reviewSupporterActivity(name, email)
+      .then(function (response) {
+        let pastSuccessfluPledges = response.data.pastSuccPledges;
+        let currentPledges = response.data.currentPledges;
+        let pastDirectSupport = response.data.pastDS;
+        let budget = response.data.budget;
+        // DISPLAY INFORMATION
+      })
+      .catch(function (error) {
+        console.log("Cannot claim pledge: ", error)
+      })
+  }
+
+  //------------Admin--------------
+
+  // Delete Project: Admin
+  const handleDeleteProjectAdmin = (projectName) => {
+    // TODO: Switch back to Admin
+    deleteProjectAsDesigner(projectName)
+      .then(function (response) {
+        console.log("Project has been deleted")
+        handleListProject(2);   // go back to project list
+      })
+      .catch(function (error) {
+        console.log("Cannot delete project: ", error)
+      })
+  }
+
+  // Reap Project: Admin
+
+
+  return (
+    <div>
+      <div>
+        <h2 style={layout.title}>Ua Mau ke Ea o ka 'Āina i ka Pono Crowdsourcing </h2>
+      </div>
+      <div style={layout.sidebar}>
+        {/* VISITOR VIEW */}
+        {role === 'visitor' && (
+          <>
+            {/* Project Window */}
+            <div style={layout.projectWindow} />
+            <div>
+              {/* Sidebar */}
+              <button type="button" style={layout.button0} onClick={() => showRegModal(0)}> Register as Designer </button>
+              <button type="button" style={layout.button1} onClick={() => showRegModal(1)}> Register as Supporter </button>
+              <button type="button" style={layout.button2} onClick={() => showRegModal(4)}> Log In</button>
+            </div>
+          </>
+        )
+        }
+        {/* SUPPORTER VIEW */}
+        {role === 'supporter' && (
+          <>
+            <div>
+              {/* Default View : No Project */}
+              {supportView === 0 && (
+                <>
+                  <div style={layout.projectWindow} />
+                </>
+              )
+              }
+              {/* Project List View, triggered after search project*/}
+              {supportView === 1 && (
+                <>
+                  <div style={layout.projectWindow}>
+                    {dbData.map(item => (
+                      <div key={item.projectName} style={layout.indivProject}>
+                        <div style={layout.projectDetails}>{" Project Name: " + item.projectName}</div>
+                        <div style={layout.projectDetails}>{" Story: " + item.story}</div><p></p>
+                        <button type="button" style={layout.viewProjectButton} onClick={() => handleViewProjectSupporter(item.projectName)}>View Project</button>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )
+              }
+              {/* Project View, triggered after view project */}
+              {supportView === 2 && (
+                <>
+                  <div style={layout.projectView}>
+                    <p></p>
+                    Name: <input id="pjName" style={layout.displayDetails} readOnly /><p></p>
+                    Type: <input id="pjType" style={layout.displayDetails} readOnly /><p></p>
+                    Story: <input id="pjStory" style={layout.displayDetails} readOnly /><p></p>
+                    Designer username: <input id="pjDesigner" style={layout.displayDetails} readOnly /><p></p>
+                    Current/Goal Amount: <input id="pjCurrAmt" style={layout.currentAmt} readOnly /> out of <input id="pjGoalAmt" style={layout.displayDetails} readOnly /><p></p>
+                    Number of Supporter:<input id="pjNumSupporter" style={layout.displayDetails} readOnly /><p></p>
+                    Deadline: <input id="pjDeadline" style={layout.displayDetails} readOnly /><p></p>
+                    Pledge: (Click to view pledge and claim!)
+                    <p></p>
+                    {pjPledge.map(pledge => (
                       <ul>
-                        <div>{"amount: " + pledge.amount + " ; " + pledge.reward}</div>
+                        <div>
+                          <button type="button" style={layout.pledgeDetails} onClick={(e) => handleViewPledge(pledge.pledgeID, document.getElementById("pjName").value)}>{"$" + pledge.amount + " - " + pledge.reward}</button>
+                        </div>
                       </ul>
                     ))}
-                  <button type="button" onClick={(e) => handleCreatePledge(document.getElementById("pjName").value)}>Create Pledge</button><p></p>
-                  <button type="button" onClick={(e) => handleViewProject(document.getElementById("pjName").value)}>Refresh</button><p></p>
-                  <button type="button" onClick={() => handleListProject(0)}>Back</button>
-                </li>
-              </>
-            )
-            }
-          </div>
-          <div>
-            {/* Sidebar */}
-            <button type="button" style={layout.button0}> {"Welcome Back! " + currDesigner} </button>
-            <button type="button" style={layout.button1} onClick={() => handleCreateProject()}> Create Project </button>
-            <button type="button" style={layout.button2} onClick={() => handleListProject(0)}> List Project </button>
-          </div>
-        </>
-      )
-      }
-      {/* ADMIN VIEW */}
-      {loggedin === 'admin' && (
-        <>
-          {/* Project List View */}
-          <div>
-            {adminView === 1 && (
-              <>
-                {dbData.map(item => (
-                  <li key={item.id} ref={refs[item.id]} style={{ height: '120px', width: '800px', border: '1px solid black', backgroundColor: '	#f4cccc' }}>
-                    <div style={layout.projectDetails}>{" Project Name: " + item.projectName}</div>
-                    <div style={layout.projectDetails}>{" Story: " + item.story}</div>
-                  </li>
-                ))}
-              </>
-            )
-            }
-            {/* Default View : No Project */}
-            {adminView === 0 && (
-              <>
-                <li style={{ height: '750px', width: '800px', border: '1px solid black', backgroundColor: '	#f4cccc' }}></li>
-              </>
-            )
-            }
-          </div>
-          <div>
-            {/* Sidebar */}
-            <button type="button" style={layout.button0}> {"Welcome Back! " + loggedin} </button>
-            <button type="button" style={layout.button1} onClick={() => handleListProject(2)}> List Project </button>
-            <button type="button" style={layout.button2}> Delete Project </button>
-          </div>
-        </>
-      )
-      }
 
+                    <p></p>
+                    <button type="button" style={{ position: "absolute", bottom: '10%', width: '100px', height: '50px', fontFamily: "Monaco, monospace", }} onClick={(e) => handleViewProjectSupporter(document.getElementById("pjName").value)}>Refresh</button><p></p>
+                    <button style={{ position: "absolute", bottom: '10%', right: '30%', width: '100px', height: '50px', fontFamily: "Monaco, monospace" }} type="button" onClick={() => handleSearchProject('')}>Back</button>
+                    <button style={{ position: "absolute", top: '10%', right: '30%', width: '200px', height: '50px', fontFamily: "Monaco, monospace" }} type="button" onClick={() => showRegModal(9)}>Direct Support</button>
+                  </div>
+                </>
+              )
+              }
+              {/* Supporter Activity View */}
+              {supportView === 3 && (
+                <>
+                  <div style={layout.projectView}>
+                    <p></p>
 
-
-      <Modal onClose={showRegModal} show={showModal}>
-        {modalScreen === 0 && (
-          <>
-            <h2>Register Designer</h2>
-            <form>
-              <ul>
-                <li> <label>Username: <input type="text" value={inputRegDesigner} onChange={e => setinputRegDesigner(e.target.value)} />        </label></li>
-                <li> <label>Email: <input type="text" value={inputRegDesignerPwd} onChange={e => setInputRegDesignerPwd(e.target.value)} />        </label></li>
-              </ul>
-              <input type="button" value="Submit" onClick={() => handleRegister(0)} />
-              {/* <button type='button' onClick={() => handleRegister(1)}>submit</button> */}
-            </form>
+                  </div>
+                </>
+              )
+              }
+            </div>
+            <div>
+              {/* Sidebar */}
+              <input type="text" style={layout.searchBar} placeholder=" Search by Genre.." id="searchbar" />
+              <button type="submit" style={layout.searchButton} onClick={(e) => handleSearchProject(document.getElementById("searchbar").value)}><FontAwesomeIcon icon={faSearch} size={'1x'} /></button>
+              <button type="button" style={layout.display1}> {"Welcome Back! " + currAcctName}</button>
+              <button type="button" style={layout.display2}> {"Budget" + currAcctName}</button>
+              <button type="button" style={layout.button3} onClick={(e) => showRegModal(8)}> Add Fund</button>
+              <button type="button" style={layout.button4} onClick={(e) => handleReviewSupporter(currAcctName, currAcctEmail)}> Account Activity</button>
+            </div>
           </>
-        )}
-        {modalScreen === 1 && (
+        )
+        }
+        {/* DESIGNER VIEW */}
+        {role === 'designer' && (
           <>
-            <h2>Register Supporter</h2>
-            <form>
-              <ul>
-                <li> <label>Email: <input type="text" value={inputRegSupporter} onChange={e => setinputRegSupporter(e.target.value)} />        </label></li>
-                <li> <label>Password: <input type="password" value={inputRegSupporterPwd} onChange={e => setInputRegSupporterPwd(e.target.value)} />        </label></li>
-              </ul>
-              <input type="button" value="Submit" onClick={() => handleRegister(1)} />
-            </form>
+            <div>
+              {/* Default View : No Project */}
+              {designerView === 0 && (
+                <>
+                  <div style={layout.projectWindow} />
+                </>
+              )
+              }
+              {/* Project List View */}
+              {designerView === 1 && (
+                <>
+                  <div style={layout.projectWindow}>
+                    {dbData.filter(project => project.designerName === currAcctName).map(item => (
+                      <div key={item.projectName} style={layout.indivProject}>
+                        <div style={layout.projectDetails}>{" Project Name: " + item.projectName}</div>
+                        <div style={layout.projectDetails}>{" Story: " + item.story}</div><p></p>
+                        <button type="button" style={layout.viewProjectButton} onClick={() => handleViewProject(item.projectName)}>View Project</button>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )
+              }
+              {/* Project View */}
+              {designerView === 2 && (
+                <>
+                  <div style={layout.projectView}>
+                    <p></p>
+                    Name: <input id="pjName" style={layout.displayDetails} readOnly /><p></p>
+                    Type: <input id="pjType" style={layout.displayDetails} readOnly /><p></p>
+                    Story: <input id="pjStory" style={layout.displayLongDetails} readOnly /><p></p>
+                    Designer username: <input id="pjDesigner" style={layout.displayDetails} readOnly /><p></p>
+                    Current/Goal Amount: <input id="pjCurrAmt" style={layout.currentAmt} readOnly /> out of <input id="pjGoalAmt" style={layout.displayDetails} readOnly /><p></p>
+                    Number of Supporter:<input id="pjNumSupporter" style={layout.displayDetails} readOnly /><p></p>
+                    Deadline: <input id="pjDeadline" style={layout.displayDetails} readOnly /><p></p>
+                    Launch Status: <input id="pjLaunch" style={layout.displayDetails} readOnly /><p></p>
+                    Pledge: (Refresh to reflect changes)
+                    {pjLaunched === 1 ? <p></p> : <button type="button" style={layout.smallControlButton} onClick={(e) => handleCreatePledge(document.getElementById("pjName").value)}>+</button>}
+                    <p></p>
+                    {pjPledge.map(pledge => (
+                      <ul>
+                        <div key={pledge.pledgeID}>
+                          {pjLaunched === 1 ? <p></p> : <button type="button" style={layout.smallControlButton} onClick={(e) => handleDeletePledge(pledge.pledgeID)}>-</button>}
+                          <button type="button" style={layout.pledgeDetails} onClick={(e) => showPledgeDetail(pledge, document.getElementById("pjName").value)}>{" ID: " + pledge.pledgeID + ", Amount: $" + pledge.amount + ", Support: " + pledge.numOfSupport + "/" + pledge.numMaxSupport + ", " + pledge.reward}</button>
+                        </div>
+                      </ul>
+                    ))}
+
+                    <p></p>
+                    <button type="button" style={{ position: "absolute", top: '8%', right: '30%', width: '200px', height: '50px', fontFamily: "Monaco, monospace", }} onClick={(e) => handleReviewProject(document.getElementById("pjName").value)}>Review Activity</button><p></p>
+                    <button type="button" style={{ position: "absolute", bottom: '10%', width: '100px', height: '50px', fontFamily: "Monaco, monospace", }} onClick={(e) => handleViewProject(document.getElementById("pjName").value)}>Refresh</button><p></p>
+                    {pjLaunched === 1 ? <p></p> : <button style={{ position: "absolute", bottom: '10%', right: '50%', width: '100px', height: '50px', fontFamily: "Monaco, monospace", }} type="button" onClick={() => handleLaunchProject(document.getElementById("pjName").value)}>Launch</button>}
+                    {pjLaunched === 1 ? <p></p> : <button style={{ position: "absolute", bottom: '10%', right: '40%', width: '100px', height: '50px', fontFamily: "Monaco, monospace", }} type="button" onClick={() => handleDeleteProject(document.getElementById("pjName").value)}>Delete</button>}
+                    <button style={{ position: "absolute", bottom: '10%', right: '30%', width: '100px', height: '50px', fontFamily: "Monaco, monospace", }} type="button" onClick={() => handleListProject(0)}>Back</button>
+                  </div>
+                </>
+              )
+              }
+              {/* Project Activity View */}
+              {designerView === 3 && (
+                <>
+                  <div style={layout.projectView}>
+                    <p></p>
+                    Displaying Project Activity here
+                    Name: <input id="pjName" style={layout.displayDetails} readOnly /><p></p>
+                    <button type="button" style={{ position: "absolute", bottom: '10%', width: '100px', height: '50px', fontFamily: "Monaco, monospace", }} onClick={(e) => handleViewProject(document.getElementById("pjName").value)}>Back</button><p></p>
+                  </div>
+                </>
+              )
+              }
+            </div>
+            <div>
+              {/* Sidebar */}
+              <button type="button" style={layout.display0}> {"Welcome Back! " + currAcctName} </button>
+              <button type="button" style={layout.button1} onClick={() => handleCreateProject()}> Create Project </button>
+              <button type="button" style={layout.button2} onClick={() => handleListProject(0)}> List Project </button>
+            </div>
           </>
-        )}
-        {modalScreen === 2 && (
+        )
+        }
+        {/* ADMIN VIEW */}
+        {role === 'admin' && (
           <>
-            <h2>Create Project</h2>
-            <form>
-              <ul>
-                <li> <label>Project Name: <input type="text" id='newProjName' />            </label></li>
-                <li> <label>Story: <input type="text" id='newProjStory' />            </label></li>
-                <li> <label>Designer Name: <input type="text" id='newProjDesigner' />            </label></li>
-                <li> <label>Genre: <input type="text" id='newProjGenre' />            </label></li>
-                <li> <label>Goal: <input type="text" id='newProjGoal' />            </label></li>
-                <li> <label>Deadline YYYY-MM-DD:<input type="text" id='newProjDeadline' />            </label></li>
-              </ul>
-              <input type="button" value="Submit" onClick={() => handleRegister(2)} />
-            </form>
+            {/* Project List View */}
+            <div>
+              {adminView === 1 && (
+                <>
+
+                  <div style={layout.projectWindow}>
+                    {dbData.map(item => (
+                      <div key={item.projectName} style={layout.indivProject}>
+                        <div style={layout.projectDetails}>{" Project Name: " + item.projectName}</div>
+                        <div style={layout.projectDetails}>{" Story: " + item.story}</div><p></p>
+                        <button type="button" style={layout.viewProjectButton} onClick={() => handleDeleteProjectAdmin(item.projectName)}>Delete</button>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )
+              }
+              {/* Default View : No Project */}
+              {adminView === 0 && (
+                <>
+                  <li style={{ height: '750px', width: '800px', border: '1px solid black', backgroundColor: '	#f4cccc' }}></li>
+                </>
+              )
+              }
+            </div>
+            <div>
+              {/* Sidebar */}
+              <button type="button" style={layout.display0}> {"Welcome Back! " + role} </button>
+              <button type="button" style={layout.button1} onClick={() => handleListProject(2)}> List Project </button>
+              <button type="button" style={layout.button2}> Delete Project </button>
+            </div>
           </>
-        )}
-        {modalScreen === 3 && (
-          <>
-            <h2>Create Pledge</h2>
-            <form>
-              <ul>
-                <li> <label>Amount: <input type="text" id='newPledgeAmt' />            </label></li>
-                <li> <label>Description: <input type="text" id='newPledgeReward' />            </label></li>
-              </ul>
-              <input type="button" value="Submit" onClick={() => handleRegister(3)} />
-            </form>
-          </>
-        )}
-        {modalScreen === 4 && (
-          <>
-            <h2>Log In </h2>
-            <p>Hint for Admins: Enter admin for both fields</p>
-            <form>
-              <ul>
-                <li> <label>Username: <input type="text" value={inputLogin} onChange={e => setInputLogin(e.target.value)} />        </label></li>
-                <li> <label>Email: <input type="text" value={inputPwd} onChange={e => setInputPwd(e.target.value)} />        </label></li>
-              </ul>
-              <input type="button" value="Submit" onClick={() => handleRegister(4)} />
-            </form>
-          </>
-        )}
+        )
+        }
+
+        <Modal onClose={showRegModal} show={showModal}>
+          {modalScreen === 0 && (
+            <>
+              {/* Register Designer */}
+              <h2 style={layout.modalHeading}>Register Designer</h2>
+              <p style={{ fontFamily: "Monaco, monospace", textAlign: 'center', padding: '30px' }}>Enter your username & email to register for a register account</p>
+              <form>
+                <ul style={layout.register}>
+                  <li> <label>Name: <input type="text" id='regUsername' />        </label></li>
+                  <li> <label>Email: <input type="text" id='regEmail' />        </label></li>
+                </ul>
+                <input style={layout.submitButton} type="button" value="Register" onClick={() => handleRegister(0)} />
+              </form>
+            </>
+          )}
+          {modalScreen === 1 && (
+            <>
+              {/* Register Supporter */}
+              <h2 style={layout.modalHeading}>Register Supporter</h2>
+              <p style={{ fontFamily: "Monaco, monospace", textAlign: 'center', padding: '30px' }}>Enter your username & email to register for a supporter account</p>
+              <form>
+                <ul style={layout.register}>
+                  <li> <label>Name: <input type="text" id='regUsername' />        </label></li>
+                  <li> <label>Email: <input type="text" id='regEmail' />        </label></li>
+                </ul>
+                <input style={layout.submitButton} type="button" value="Register" onClick={() => handleRegister(1)} />
+              </form>
+            </>
+          )}
+          {modalScreen === 2 && (
+            <>
+              {/* Create Project */}
+              <h2 style={layout.modalHeading}>Create Project</h2>
+              <form>
+                <ul style={layout.spacedList}>
+                  <li> <label>Project Name: <input type="text" id='newProjName' />            </label></li>
+                  <li> <label>Story:  <input type="text" id='newProjStory' />            </label></li>
+                  <li> <label>Designer Name:  <input type="text" id='newProjDesigner' />            </label></li>
+                  <li> <label>Genre:  <input type="text" id='newProjGenre' />            </label></li>
+                  <li> <label>Goal: <input type="number" id='newProjGoal' />            </label></li>
+                  <li> <label>Deadline YYYY-MM-DD:  <input type="text" id='newProjDeadline' />            </label></li>
+                </ul>
+                <input style={layout.submitButton} type="button" value="Create" onClick={() => handleRegister(2)} />
+              </form>
+            </>
+          )}
+          {modalScreen === 3 && (
+            <>
+              {/* Create Pledge */}
+              <h2 style={layout.modalHeading}>Create Pledge</h2>
+              <form>
+                <ul style={layout.spacedList}>
+                  <li> <label>Amount: $<input type="text" id='newPledgeAmt' />            </label></li>
+                  <li> <label>Description: <input type="text" id='newPledgeReward' />            </label></li>
+                  <li> <label>Maximum # of Support: <input type="text" id='newPledgeMaxSupport' />            </label></li>
+                </ul>
+                <input style={layout.submitButton} type="button" value="Create" onClick={() => handleRegister(3)} />
+              </form>
+            </>
+          )}
+          {modalScreen === 4 && (
+            <>
+              {/* Log In */}
+              <h2 style={layout.modalHeading}>Log In</h2>
+              <p style={{ fontFamily: "Monaco, monospace", textAlign: 'center', padding: '30px' }}>Enter your credentials to log in; <br />Admin: enter admin, admin to log in</p>
+              <form>
+                <ul style={layout.register}>
+                  <li> <label>Name: <input type="text" id='loginName' />        </label></li>
+                  <li> <label>Email: <input type="text" id='loginEmail' />        </label></li>
+                </ul>
+                <input style={layout.submitButton} type="button" value="Log in" onClick={() => handleRegister(4)} />
+              </form>
+            </>
+          )}
+          {modalScreen === 5 && (
+            <>
+              {/* View Pledge as Supporter */}
+              <h2 style={{ textAlign: "center", fontSize: "180%", fontWeight: "700", fontFamily: "Monaco, monospace", color: "#85200c", }}><input id="pledgeReward" style={layout.displayPledgeID} readOnly /></h2>
+              <div>
+                <ul style={layout.spacedList}>
+                  <li> ID: <input style={layout.displayPledgeDetails} id='pledgeID' readOnly />            </li>
+                  <li> Amount: <input style={layout.displayPledgeNumberDetails} id='pledgeAmt' readOnly />         </li>
+                  <li> Number of Support (Current/Max): <input style={layout.displayPledgeNumberDetailsRight} id='pledgeCurrSupport' readOnly />{"/"}<input style={layout.displayPledgeNumberDetails} id='pledgeMaxSupport' readOnly /></li>
+                  <li> Supporters: </li>
+                  <textarea id='pledgeSupporter' style={layout.supporterTextarea} rows="3" cols="35" readOnly />
+                </ul>
+                <input style={layout.claimPledgeButton} type="button" value="Claim" onClick={() => handleClaimPledge(document.getElementById('pledgeID').value, document.getElementById('pjName').value)} />
+              </div>
+            </>
+          )}
+          {modalScreen === 6 && (
+            <>
+              {/* Claim Pledge Success Screen */}
+              <h2 style={{ textAlign: "center", fontSize: "180%", fontWeight: "700", fontFamily: "Monaco, monospace", color: "#85200c", }}><input id="pledgeReward" style={layout.displayPledgeID} readOnly /></h2>
+              <form>
+                <ul style={layout.spacedList}>
+                  <li>You just claimed a pledge!</li>
+                </ul>
+              </form>
+            </>
+          )}
+          {modalScreen === 7 && (
+            <>
+              {/* View Pledge as Designer */}
+              <h2 style={{ textAlign: "center", fontSize: "180%", fontWeight: "700", fontFamily: "Monaco, monospace", color: "#85200c", }}><input id='pledgeReward' style={layout.displayPledgeID} readOnly /></h2>
+              <div>
+                <ul style={layout.spacedList}>
+                  <li> ID: <input style={layout.displayPledgeDetails} id='pledgeID' readOnly />            </li>
+                  <li> Amount: <input style={layout.displayPledgeNumberDetails} id='pledgeAmt' readOnly />         </li>
+                  <li> Number of Support (Current/Max): <input style={layout.displayPledgeNumberDetailsRight} id='pledgeCurrSupport' readOnly />{"/"}<input style={layout.displayPledgeNumberDetails} id='pledgeMaxSupport' readOnly /></li>
+                  <li> Supporters: </li>
+                  <textarea id='pledgeSupporter' style={layout.supporterTextarea} rows="3" cols="35" readOnly />
+                </ul>
+              </div>
+            </>
+          )}
+          {modalScreen === 8 && (
+            <>
+              {/* Add Fund to Supporter Account */}
+              <h2 style={layout.modalHeading}>Add Fund</h2>
+              <div>
+                <ul style={layout.spacedList}>
+                  <li> Account Name: <input style={layout.displayPledgeDetails} id='loginName' value={currAcctName} readOnly />            </li>
+                  <li> Account Email: <input style={layout.displayPledgeNumberDetails} id='loginEmail' value={currAcctEmail} readOnly />         </li>
+                  <li> Amount: <input style={layout.fund} id='fund' placeholder='How much would you like to add?' /></li>
+                </ul>
+                <input style={layout.claimPledgeButton} type="button" value="Add" onClick={() => handleRegister(5)} />
+                <input style={layout.errorFund} id='addFundError' readOnly></input>
+              </div>
+            </>
+          )}
+          {modalScreen === 9 && (
+            <>
+              {/* Direct Support from Supporter */}
+              <h2 style={layout.modalHeading}>Direct support</h2>
+              <div>
+                <ul style={layout.spacedList}>
+                  <li> Project Name: <input style={layout.displayPledgeDetails} id='pjName' value={document.getElementById('pjName').value} readOnly />            </li>
+                  <li> Account Name: <input style={layout.displayPledgeDetails} id='loginName' value={currAcctName} readOnly />            </li>
+                  <li> Account Email: <input style={layout.displayPledgeDetails} id='loginEmail' value={currAcctEmail} readOnly />         </li>
+                  <li> Amount: $ <input style={layout.fund} id='directsupport' placeholder='Help us reach our goal!' /></li>
+                </ul>
+                <input style={layout.claimPledgeButton} type="button" value="Support!" onClick={() => handleRegister(6)} />
+                <input style={layout.errorFund} id='directsupportError' readOnly></input>
+              </div>
+            </>
+          )}
 
 
-      </Modal>
+        </Modal>
 
+      </div>
     </div>
 
   );
