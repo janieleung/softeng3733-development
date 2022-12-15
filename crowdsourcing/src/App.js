@@ -5,7 +5,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faBars, faSearch } from '@fortawesome/free-solid-svg-icons';
 // import axios from "axios";
 import { createPledge, createProject, deleteProjectAsDesigner, launchProject, listProjectAsDesigner, registerDesigner, viewProjectAsDesigner, deletePledge, reviewProjectActivity } from './Lambda/Designer';
-import { addFund, claimPledge, registerSupporter, reviewSupporterActivity, searchProject, viewPledge, viewProjectAsSupporter } from './Lambda/Supporter.js';
+import { addFund, claimPledge, registerSupporter, reviewSupporterActivity, searchProject, viewPledge, viewProjectAsSupporter, directSupport } from './Lambda/Supporter.js';
 import { deleteProjectAsAdmin, listProjectAsAdmin, userLogin } from './Lambda/Admin.js';
 
 function App() {
@@ -21,12 +21,19 @@ function App() {
   const [designerView, setDesignerView] = React.useState(0);    // 0 : no project, 1: brief project, 2: project view 
   const [currAcctName, setCurrAcctName] = React.useState(''); // TODO: Identify designer 
   const [currAcctEmail, setCurrAcctEmail] = React.useState(''); // TODO: Identify designer 
+  const [pj, setPj] = React.useState('');
   const [pjPledge, setPjPledge] = React.useState([]);
   const [pjLaunched, setPjLaunched] = React.useState(1);
+  const [pjClaimActivity, setClaimActivity] = React.useState([]);
+  const [pjDSList, setDSList] = React.useState([]);
 
   // supporter states 
   const [supportView, setSupporterView] = React.useState(0); // 0: no project, 1: search results, 2: project view
   const [budget, setBudget] = React.useState(0);
+  const [pastSusPledges, setPastSuccessfulPledges] = React.useState([]);
+  const [pastDS, setPastDS] = React.useState([]);
+  const [currPledge, setCurrPledge] = React.useState([]);
+  const [pjSuccess, setPjSuccess] = React.useState(0);
 
   // admin states
   const [adminView, setAdminView] = React.useState(0);    // 0 : no project, 1: all project
@@ -131,7 +138,6 @@ function App() {
     // Add Fund: id = 5
     else if (id === 5) {
       let name = document.getElementById("loginName").value;
-      let email = document.getElementById("loginEmail").value;
       let fund = document.getElementById('fund').value;
       if (fund === '') {
         console.log('Add fund: Amount is empty')
@@ -141,9 +147,9 @@ function App() {
         // console.log("Adding fund to account: amount: ", fund, ', name: ', name, ', email: ', email)
         document.getElementById('addFundError').value = "";
         // TODO: LAMBDA FUNCTION: ADD FUND
-        addFund(name, email.fund)
+        addFund(name, fund)
           .then(function (response) {
-            console.log("Successfully added fund as a ");
+            console.log("Successfully added fund");
             setModal(!showModal);
           })
           .catch(function (error) {
@@ -157,20 +163,20 @@ function App() {
     // Direct Support from Supporter: id = 6
     else if (id === 6) {
       let name = document.getElementById("loginName").value;
-      let email = document.getElementById("loginEmail").value;
       let projectName = document.getElementById('pjName').value;
-      let directSupport = document.getElementById('directsupport').value;
-      if (directSupport === '') {
+      let ds = document.getElementById('directsupport').value;
+      if (ds === '') {
         console.log('Direct Support: Amount is empty')
         document.getElementById('directsupportError').value = "Amount cannot be empty!";
       }
       else {
         document.getElementById('directsupportError').value = "";
         // TODO: LAMBDA FUNCTION: DIRECT SUPPORT
-        directSupport(name, email, directSupport, projectName)
+        directSupport(name, ds, projectName)
           .then(function (response) {
             console.log("Successfully given a direct support ");
             setModal(!showModal);
+            handleViewProjectSupporter(projectName);
           })
           .catch(function (error) {
             console.log("Cannot give direct support ", error)
@@ -235,6 +241,15 @@ function App() {
     return currentAmt;
   }
 
+  const calculateDS = dsList => {
+    let currentAmt = 0;
+    dsList.forEach(function (ds) {
+      let amtPerEntry = ds.amount;
+      currentAmt += amtPerEntry;
+    });
+    return currentAmt;
+  }
+
   // View Project: Designer
   const handleViewProject = name => {
     setDesignerView(2);
@@ -246,7 +261,7 @@ function App() {
         document.getElementById("pjType").value = output.project.type;
         document.getElementById("pjStory").value = output.project.story;
         document.getElementById("pjDesigner").value = output.project.designerName;
-        document.getElementById("pjCurrAmt").value = calculateCurrent(output.pledges);
+        document.getElementById("pjCurrAmt").value = calculateCurrent(output.pledges) + calculateDS(output["Direct Support"]);
         document.getElementById("pjGoalAmt").value = output.project.goal;
         document.getElementById("pjNumSupporter").value = calculateSupporter(output.pledges);
         document.getElementById("pjDeadline").value = output.project.deadline.substring(0, 10);
@@ -334,12 +349,20 @@ function App() {
   const handleReviewProject = name => {
     // 1. Fetch POST request to get project activity
     // 2. Change Designer View to 3
-    setDesignerView(3);
-    let projectName = document.getElementById("pjName").value = name;
+
+    let projectName = name;
+    setPj(name);
     reviewProjectActivity(projectName)
       .then(function (response) {
-        let claimActivity = response.data.claimPledgeActivity;
-        let directSupportList = response.data.directSupport;
+        let claimActivity = response.data.result["pledges"];
+        let directSupportList = response.data.result["Direct Support"];
+        setClaimActivity(claimActivity);
+        setDSList(directSupportList);
+        console.log(response)
+
+        setDesignerView(3);
+        console.log("projectName = ", projectName)
+        document.getElementById('pjName').value = projectName;
         // DISPLAY INFORMATION
       })
       .catch(function (error) {
@@ -374,11 +397,12 @@ function App() {
         document.getElementById("pjType").value = output.project.type;
         document.getElementById("pjStory").value = output.project.story;
         document.getElementById("pjDesigner").value = output.project.designerName;
-        document.getElementById("pjCurrAmt").value = calculateCurrent(output.pledges);
+        document.getElementById("pjCurrAmt").value = calculateCurrent(output.pledges) + calculateDS(output["Direct Support"]);
         document.getElementById("pjGoalAmt").value = output.project.goal;
         document.getElementById("pjNumSupporter").value = calculateSupporter(output.pledges);
         document.getElementById("pjDeadline").value = output.project.deadline.substring(0, 10);
         setPjPledge(output.pledges);  // #4: Set pledge details from POST request
+        setPjSuccess(output.project.isSuccessful);
       })
       .catch(function (error) {
         console.log("Cannot view project: ", error)
@@ -405,9 +429,6 @@ function App() {
 
   // View Pledge: Supporter
   const handleViewPledge = (pledgeid, projectName) => {
-    // TODO: Handle View Pledge
-    // 1. setModalScreen(5)
-    // Get pledge information from Lambda function
     showRegModal(5)
     viewPledge(pledgeid, projectName)
       .then(function (response) {
@@ -429,7 +450,6 @@ function App() {
 
   // Claim Pledge: Supporter
   const handleClaimPledge = (pledgeid, projectName) => {
-    // 1. Claim Pledge Lambda Function
     claimPledge(pledgeid, currAcctName, currAcctEmail, projectName)
       .then(function (response) {
         setModalScreen(6);
@@ -441,17 +461,20 @@ function App() {
 
   // TODO: Review Supporter Activity: Supporter
   const handleReviewSupporter = (name, email) => {
-    setSupporterView(3);
+
     reviewSupporterActivity(name, email)
       .then(function (response) {
-        let pastSuccessfluPledges = response.data.pastSuccPledges;
-        let currentPledges = response.data.currentPledges;
-        let pastDirectSupport = response.data.pastDS;
-        let budget = response.data.budget;
+        let pastSuccessfulPledges = response.data.result["past successful pledges"];
+        setPastSuccessfulPledges(pastSuccessfulPledges);
+        let currentPledges = response.data.result["current pledges"];
+        setCurrPledge(currentPledges);
+        let pastDirectSupport = response.data.result["direct support"];
+        setPastDS(pastDirectSupport);
+        setSupporterView(3);
         // DISPLAY INFORMATION
       })
       .catch(function (error) {
-        console.log("Cannot claim pledge: ", error)
+        console.log("Cannot view supporter activity: ", error)
       })
   }
 
@@ -508,7 +531,7 @@ function App() {
               {supportView === 1 && (
                 <>
                   <div style={layout.projectWindow}>
-                    {dbData.map(item => (
+                    {dbData.filter(project => project.isFail === 0).map(item => (
                       <div key={item.projectName} style={layout.indivProject}>
                         <div style={layout.projectDetails}>{" Project Name: " + item.projectName}</div>
                         <div style={layout.projectDetails}>{" Story: " + item.story}</div><p></p>
@@ -535,9 +558,16 @@ function App() {
                     <p></p>
                     {pjPledge.map(pledge => (
                       <ul>
-                        <div>
-                          <button type="button" style={layout.pledgeDetails} onClick={(e) => handleViewPledge(pledge.pledgeID, document.getElementById("pjName").value)}>{"$" + pledge.amount + " - " + pledge.reward}</button>
-                        </div>
+                        {pjSuccess === 1 ?
+                          <div>
+                            <label style={layout.flatPledgeDetails}>{"$" + pledge.amount + " - " + pledge.reward}</label>
+                          </div>
+                          :
+                          <div>
+                            <button type="button" style={layout.pledgeDetails} onClick={(e) => handleViewPledge(pledge.pledgeID, document.getElementById("pjName").value)}>{"$" + pledge.amount + " - " + pledge.reward}</button>
+                          </div>
+                        }
+
                       </ul>
                     ))}
 
@@ -553,8 +583,30 @@ function App() {
               {supportView === 3 && (
                 <>
                   <div style={layout.projectView}>
-                    <p></p>
-
+                    Direct Support: <p></p>
+                    {pastDS.map(ds => (
+                      <ul>
+                        <div>
+                          {"-$" + ds.amount + " - " + ds.projectName}
+                        </div>
+                      </ul>
+                    ))}
+                    Past Successful Pledges: <p></p>
+                    {pastSusPledges.map(ds => (
+                      <ul>
+                        <div>
+                          {"-$" + ds.amount + " - " + ds.projectName}
+                        </div>
+                      </ul>
+                    ))}
+                    Current Pledges: <p></p>
+                    {currPledge.map(ds => (
+                      <ul>
+                        <div>
+                          {"-$" + ds.amount + " - " + ds.projectName}
+                        </div>
+                      </ul>
+                    ))}
                   </div>
                 </>
               )
@@ -622,7 +674,6 @@ function App() {
                         </div>
                       </ul>
                     ))}
-
                     <p></p>
                     <button type="button" style={{ position: "absolute", top: '8%', right: '30%', width: '200px', height: '50px', fontFamily: "Monaco, monospace", }} onClick={(e) => handleReviewProject(document.getElementById("pjName").value)}>Review Activity</button><p></p>
                     <button type="button" style={{ position: "absolute", bottom: '10%', width: '100px', height: '50px', fontFamily: "Monaco, monospace", }} onClick={(e) => handleViewProject(document.getElementById("pjName").value)}>Refresh</button><p></p>
@@ -637,9 +688,23 @@ function App() {
               {designerView === 3 && (
                 <>
                   <div style={layout.projectView}>
-                    <p></p>
-                    Displaying Project Activity here
-                    Name: <input id="pjName" style={layout.displayDetails} readOnly /><p></p>
+                    Activity of <input id="pjName" style={layout.displayDetails} value={pj} readOnly /><p></p>
+                    Pledge Activity: <p></p>
+                    {pjClaimActivity.map(activity => (
+                      <ul>
+                        <div key={activity.supportID}>
+                          {"+$" + activity.amount + " by " + activity.supporterName + " - pledgeID: " + activity.pledgeID}
+                        </div>
+                      </ul>
+                    ))}
+                    Direct Support: <p></p>
+                    {pjDSList.map(ds => (
+                      <ul>
+                        <div key={ds.historyID}>
+                          {"+$" + ds.amount + " by " + ds.supporterName}
+                        </div>
+                      </ul>
+                    ))}
                     <button type="button" style={{ position: "absolute", bottom: '10%', width: '100px', height: '50px', fontFamily: "Monaco, monospace", }} onClick={(e) => handleViewProject(document.getElementById("pjName").value)}>Back</button><p></p>
                   </div>
                 </>

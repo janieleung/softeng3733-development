@@ -102,5 +102,5 @@ export function reviewProjectActivity(name){
     let value = JSON.stringify(msg)
     let data = { 'body': value }
 
-   return instancep1.post("/reviewProjectActivity", data)
+   return instancep2.post("/reviewProjectActivity", data)
 }

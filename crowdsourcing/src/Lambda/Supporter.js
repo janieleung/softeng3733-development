@@ -10,7 +10,7 @@ const instancep2 = axios.create({
 });
 
 const instancep3 = axios.create({
-    baseURL: 'https://snaj1zrued.execute-api.us-east-1.amazonaws.com/Prod'
+    baseURL: 'https://73b6wm9hzf.execute-api.us-east-1.amazonaws.com/Prod'
 });
 
 export function registerSupporter(name, email) {
@@ -71,36 +71,33 @@ export function claimPledge(pledgeid, supporterName, supporterEmail, projectName
 
 }
 
-export function addFund(name, email, fund){
-    console.log("Adding fund to account: amount: ", fund, ', name: ', name, ', email: ', email)
+export function addFund(name, fund){
+    console.log("Adding fund to account: amount: ", fund, ', name: ', name)
     let msg = {}
     msg["supporterName"] = name;
-    msg["supporterEmail"] = email;
-    msg["fund"] = fund
+    msg["fundToAdd"] = fund;
     let value = JSON.stringify(msg)
     let data = { 'body': value }
 
     return instancep2.post("/addFunds", data);
 }
 
-export function directSupport(name, email, fund, projectName){
-    console.log("Direct Support: amount: ", fund, ', name: ', name, ', email: ', email, ', project: ', projectName)
+export function directSupport(name, fund, projectName){
+    console.log("Direct Support: amount: ", fund, ', name: ', name, ', project: ', projectName);
     let msg = {}
     msg["supporterName"] = name;
-    msg["supporterEmail"] = email;
     msg["projectName"] = projectName;
-    msg["fund"] = fund
+    msg["amount"] = fund;
     let value = JSON.stringify(msg)
     let data = { 'body': value }
 
     return instancep2.post("/giveDirectSupport", data);
 }
 
-export function reviewSupporterActivity(name, email){
-    console.log("Viewing Activity of Supporter: ", name, ", Email: ", email)
+export function reviewSupporterActivity(name){
+    console.log("Viewing Activity of Supporter: ", name)
     let msg = {}
     msg["supporterName"] = name;
-    msg["supporterEmail"] = email;
     let value = JSON.stringify(msg)
     let data = { 'body': value }
 

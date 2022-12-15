@@ -38,7 +38,7 @@ export const layout = {
     fontFamily: "Monaco, monospace",
   },
 
-  display0:{
+  display0: {
     position: "absolute",
     top: 30,
     width: 200,
@@ -192,7 +192,7 @@ export const layout = {
     // fontFamily: "baskerville,serif",
     fontFamily: "Monaco, monospace",
     textAlign: "right",
-    width: '7%'
+    width: '20%'
   },
 
   indivProject: {
@@ -316,6 +316,15 @@ export const layout = {
     color: 'white',
     fontFamily: "Monaco, monospace",
     borderRadius: '10px',
+  },
+
+  flatPledgeDetails: {
+    width: 'auto',
+    height: 80,
+    backgroundColor: '#85200c',
+    color: 'white',
+    fontFamily: "Monaco, monospace",
+    borderRadius: '0px',
   },
 
   claimPledgeButton: {
