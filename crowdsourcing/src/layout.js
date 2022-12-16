@@ -413,7 +413,7 @@ export const layout = {
     height: '30px',
     textAlign: 'center',
     fontFamily: "Monaco, monospace",
-    fontSize: '120%',
+    fontSize: '110%',
     color: 'red'
   }
 

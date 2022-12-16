@@ -103,3 +103,14 @@ export function reviewSupporterActivity(name){
 
     return instancep2.post("/reviewSupporterActivity", data);
 }
+
+export function viewBudget(name, email){
+    console.log("Getting the budget for ", name)
+    let msg = {}
+    msg["name"] = name;
+    msg["email"] = email;
+    let value = JSON.stringify(msg)
+    let data = { 'body': value }
+
+    return instancep1.post("/supporterBudget", data);
+}

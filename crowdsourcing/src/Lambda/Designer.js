@@ -39,7 +39,11 @@ export function createPledge(reward, amount, numMaxSupport, projectName) {
     let msg = {}
     msg["reward"] = reward;
     msg["amount"] = amount;
-    msg["numMaxSupport"] = numMaxSupport;
+    if(numMaxSupport===''){
+        msg["numMaxSupport"] = 1000000;
+    } else {
+        msg["numMaxSupport"] = numMaxSupport;
+    }
     msg["projectName"] = projectName;
     let value = JSON.stringify(msg)
     let data = { 'body': value }

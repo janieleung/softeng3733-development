@@ -5,7 +5,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faBars, faSearch } from '@fortawesome/free-solid-svg-icons';
 // import axios from "axios";
 import { createPledge, createProject, deleteProjectAsDesigner, launchProject, listProjectAsDesigner, registerDesigner, viewProjectAsDesigner, deletePledge, reviewProjectActivity } from './Lambda/Designer';
-import { addFund, claimPledge, registerSupporter, reviewSupporterActivity, searchProject, viewPledge, viewProjectAsSupporter, directSupport } from './Lambda/Supporter.js';
+import { addFund, claimPledge, registerSupporter, reviewSupporterActivity, searchProject, viewPledge, viewProjectAsSupporter, directSupport, viewBudget } from './Lambda/Supporter.js';
 import { deleteProjectAsAdmin, listProjectAsAdmin, userLogin } from './Lambda/Admin.js';
 
 function App() {
@@ -29,7 +29,7 @@ function App() {
 
   // supporter states 
   const [supportView, setSupporterView] = React.useState(0); // 0: no project, 1: search results, 2: project view
-  const [budget, setBudget] = React.useState(0);
+  const [supporterBudget, setBudget] = React.useState(0);
   const [pastSusPledges, setPastSuccessfulPledges] = React.useState([]);
   const [pastDS, setPastDS] = React.useState([]);
   const [currPledge, setCurrPledge] = React.useState([]);
@@ -126,6 +126,9 @@ function App() {
         .then(function (response) {
           loginRole = response.data.result;
           console.log("Successfully log in as a ", loginRole, " , name:", name);
+          if(loginRole === 'supporter'){
+            handleViewBudget(name, email);
+          }
           setRole(loginRole);
           setCurrAcctName(name);
           setCurrAcctEmail(email);
@@ -144,12 +147,12 @@ function App() {
         document.getElementById('addFundError').value = "Amount cannot be empty!";
       }
       else {
-        // console.log("Adding fund to account: amount: ", fund, ', name: ', name, ', email: ', email)
         document.getElementById('addFundError').value = "";
         // TODO: LAMBDA FUNCTION: ADD FUND
         addFund(name, fund)
           .then(function (response) {
             console.log("Successfully added fund");
+            handleViewBudget(currAcctName, currAcctEmail);
             setModal(!showModal);
           })
           .catch(function (error) {
@@ -174,14 +177,20 @@ function App() {
         // TODO: LAMBDA FUNCTION: DIRECT SUPPORT
         directSupport(name, ds, projectName)
           .then(function (response) {
-            console.log("Successfully given a direct support ");
-            setModal(!showModal);
-            handleViewProjectSupporter(projectName);
+            console.log("Status code ", response.data.statusCode)
+            if (response.data.statusCode === 200) {
+              console.log("Successfully given a direct support ", response);
+              setModal(!showModal);
+              handleViewProjectSupporter(projectName);
+              handleViewBudget(currAcctName, currAcctEmail);
+            } else if (response.data.statusCode === 400) {
+              document.getElementById('directsupportError').value = response.data.error;
+            }
+
           })
           .catch(function (error) {
             console.log("Cannot give direct support ", error)
           })
-        setModal(!showModal);
       }
     }
 
@@ -452,14 +461,20 @@ function App() {
   const handleClaimPledge = (pledgeid, projectName) => {
     claimPledge(pledgeid, currAcctName, currAcctEmail, projectName)
       .then(function (response) {
-        setModalScreen(6);
+        if (response.data.statusCode === 200) {
+          console.log("Successfully claimed pledge", response);
+          setModalScreen(6);
+          handleViewBudget(currAcctName, currAcctEmail);
+        } else if (response.data.statusCode === 400) {
+          document.getElementById('claimError').value = response.data.error;
+        }
       })
       .catch(function (error) {
         console.log("Cannot claim pledge: ", error)
       })
   }
 
-  // TODO: Review Supporter Activity: Supporter
+  // Review Supporter Activity: Supporter
   const handleReviewSupporter = (name, email) => {
 
     reviewSupporterActivity(name, email)
@@ -475,6 +490,21 @@ function App() {
       })
       .catch(function (error) {
         console.log("Cannot view supporter activity: ", error)
+      })
+  }
+
+  // View Budget
+
+  const handleViewBudget = (name, email) => {
+    viewBudget(name, email)
+      .then(function (response) {
+        console.log(response)
+        console.log("Budget = ",response.data.result[0].budget)
+        setBudget(response.data.result[0].budget)
+        // DISPLAY INFORMATION
+      })
+      .catch(function (error) {
+        console.log("Cannot view supporter fund: ", error)
       })
   }
 
@@ -559,22 +589,19 @@ function App() {
                     {pjPledge.map(pledge => (
                       <ul>
                         {pjSuccess === 1 ?
-                          <div>
-                            <label style={layout.flatPledgeDetails}>{"$" + pledge.amount + " - " + pledge.reward}</label>
-                          </div>
+                          <div><label style={layout.flatPledgeDetails}>{"$" + pledge.amount + " - " + pledge.reward}</label></div>
                           :
-                          <div>
-                            <button type="button" style={layout.pledgeDetails} onClick={(e) => handleViewPledge(pledge.pledgeID, document.getElementById("pjName").value)}>{"$" + pledge.amount + " - " + pledge.reward}</button>
-                          </div>
+                          <div><button type="button" style={layout.pledgeDetails} onClick={(e) => handleViewPledge(pledge.pledgeID, document.getElementById("pjName").value)}>{"$" + pledge.amount + " - " + pledge.reward}</button></div>
                         }
-
                       </ul>
                     ))}
 
                     <p></p>
                     <button type="button" style={{ position: "absolute", bottom: '10%', width: '100px', height: '50px', fontFamily: "Monaco, monospace", }} onClick={(e) => handleViewProjectSupporter(document.getElementById("pjName").value)}>Refresh</button><p></p>
                     <button style={{ position: "absolute", bottom: '10%', right: '30%', width: '100px', height: '50px', fontFamily: "Monaco, monospace" }} type="button" onClick={() => handleSearchProject('')}>Back</button>
-                    <button style={{ position: "absolute", top: '10%', right: '30%', width: '200px', height: '50px', fontFamily: "Monaco, monospace" }} type="button" onClick={() => showRegModal(9)}>Direct Support</button>
+                    {pjSuccess === 1 ? <button style={{ position: "absolute", top: '10%', right: '30%', width: '200px', height: '50px', fontFamily: "Monaco, monospace" }}>Goal Achieved!</button>
+                      : <button style={{ position: "absolute", top: '10%', right: '30%', width: '200px', height: '50px', fontFamily: "Monaco, monospace" }} type="button" onClick={() => showRegModal(9)}>Direct Support</button>
+                    }
                   </div>
                 </>
               )
@@ -617,7 +644,7 @@ function App() {
               <input type="text" style={layout.searchBar} placeholder=" Search by Genre.." id="searchbar" />
               <button type="submit" style={layout.searchButton} onClick={(e) => handleSearchProject(document.getElementById("searchbar").value)}><FontAwesomeIcon icon={faSearch} size={'1x'} /></button>
               <button type="button" style={layout.display1}> {"Welcome Back! " + currAcctName}</button>
-              <button type="button" style={layout.display2}> {"Budget" + currAcctName}</button>
+              <button type="button" style={layout.display2} onClick={(e) => handleViewBudget(currAcctName, currAcctEmail)}> {"Budget: " + supporterBudget}</button>
               <button type="button" style={layout.button3} onClick={(e) => showRegModal(8)}> Add Fund</button>
               <button type="button" style={layout.button4} onClick={(e) => handleReviewSupporter(currAcctName, currAcctEmail)}> Account Activity</button>
             </div>
@@ -812,7 +839,7 @@ function App() {
                 <ul style={layout.spacedList}>
                   <li> <label>Amount: $<input type="text" id='newPledgeAmt' />            </label></li>
                   <li> <label>Description: <input type="text" id='newPledgeReward' />            </label></li>
-                  <li> <label>Maximum # of Support: <input type="text" id='newPledgeMaxSupport' />            </label></li>
+                  <li> <label>Maximum # of Support: <input type="text" id='newPledgeMaxSupport' placeholder='Leave blank if unlimited' />            </label></li>
                 </ul>
                 <input style={layout.submitButton} type="button" value="Create" onClick={() => handleRegister(3)} />
               </form>
@@ -845,6 +872,7 @@ function App() {
                   <textarea id='pledgeSupporter' style={layout.supporterTextarea} rows="3" cols="35" readOnly />
                 </ul>
                 <input style={layout.claimPledgeButton} type="button" value="Claim" onClick={() => handleClaimPledge(document.getElementById('pledgeID').value, document.getElementById('pjName').value)} />
+                <input style={layout.errorFund} id='claimError' readOnly></input>
               </div>
             </>
           )}
