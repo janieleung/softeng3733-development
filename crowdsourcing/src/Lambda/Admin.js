@@ -9,6 +9,10 @@ const instancep2 = axios.create({
     baseURL: ' https://nxs9op302e.execute-api.us-east-1.amazonaws.com/Prod'
 });
 
+const instancep3 = axios.create({
+    baseURL: 'https://73b6wm9hzf.execute-api.us-east-1.amazonaws.com/Prod'
+});
+
 export function listProjectAsAdmin() {
     console.log("Listing Project as an Admin");
     let msg = {}
@@ -37,4 +41,13 @@ export function deleteProjectAsAdmin(projectName){
     let data = { 'body': value }
 
     return instancep1.post("/deleteProjectAdmin", data);
+}
+
+export function reapProject() {
+    console.log("Reaping Project as an Admin");
+    let msg = {}
+    let value = JSON.stringify(msg)
+    let data = { 'body': value }
+
+    return instancep3.post("/reapProject", data)
 }

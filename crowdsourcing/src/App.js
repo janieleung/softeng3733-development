@@ -6,7 +6,7 @@ import { faBars, faSearch } from '@fortawesome/free-solid-svg-icons';
 // import axios from "axios";
 import { createPledge, createProject, deleteProjectAsDesigner, launchProject, listProjectAsDesigner, registerDesigner, viewProjectAsDesigner, deletePledge, reviewProjectActivity } from './Lambda/Designer';
 import { addFund, claimPledge, registerSupporter, reviewSupporterActivity, searchProject, viewPledge, viewProjectAsSupporter, directSupport, viewBudget } from './Lambda/Supporter.js';
-import { deleteProjectAsAdmin, listProjectAsAdmin, userLogin } from './Lambda/Admin.js';
+import { deleteProjectAsAdmin, listProjectAsAdmin, reapProject, userLogin } from './Lambda/Admin.js';
 
 function App() {
   const [dbData, setdbData] = React.useState([]);
@@ -270,7 +270,8 @@ function App() {
         document.getElementById("pjType").value = output.project.type;
         document.getElementById("pjStory").value = output.project.story;
         document.getElementById("pjDesigner").value = output.project.designerName;
-        document.getElementById("pjCurrAmt").value = calculateCurrent(output.pledges) + calculateDS(output["Direct Support"]);
+        // document.getElementById("pjCurrAmt").value = calculateCurrent(output.pledges) + calculateDS(output["Direct Support"]);
+        document.getElementById("pjCurrAmt").value = output.project.currentAmount;
         document.getElementById("pjGoalAmt").value = output.project.goal;
         document.getElementById("pjNumSupporter").value = calculateSupporter(output.pledges);
         document.getElementById("pjDeadline").value = output.project.deadline.substring(0, 10);
@@ -345,7 +346,9 @@ function App() {
         document.getElementById("pledgeReward").value = output.pledge.reward;
         document.getElementById("pledgeAmt").value = '$' + output.pledge.amount;
         document.getElementById("pledgeCurrSupport").value = output.pledge.numOfSupport;
-        document.getElementById("pledgeMaxSupport").value = output.pledge.numMaxSupport;
+        if(output.pledge.numMaxSupport === 1000000){
+          document.getElementById("pledgeMaxSupport").value = 'unlimited';
+        } else { document.getElementById("pledgeMaxSupport").value = output.pledge.numMaxSupport; } 
         document.getElementById("pledgeSupporter").value = compileSupporterList(activity);
       })
       .catch(function (error) {
@@ -387,6 +390,7 @@ function App() {
       .then(function (response) {
         console.log("Supporter - Searching project with keyword: ", response)
         let output_list = response.data.result;
+        console.log(output_list)
         setdbData(output_list);
         setSupporterView(1)
       })
@@ -406,7 +410,8 @@ function App() {
         document.getElementById("pjType").value = output.project.type;
         document.getElementById("pjStory").value = output.project.story;
         document.getElementById("pjDesigner").value = output.project.designerName;
-        document.getElementById("pjCurrAmt").value = calculateCurrent(output.pledges) + calculateDS(output["Direct Support"]);
+        // document.getElementById("pjCurrAmt").value = calculateCurrent(output.pledges) + calculateDS(output["Direct Support"]);
+        document.getElementById("pjCurrAmt").value = output.project.currentAmount;
         document.getElementById("pjGoalAmt").value = output.project.goal;
         document.getElementById("pjNumSupporter").value = calculateSupporter(output.pledges);
         document.getElementById("pjDeadline").value = output.project.deadline.substring(0, 10);
@@ -448,7 +453,9 @@ function App() {
         document.getElementById("pledgeReward").value = output.pledge.reward;
         document.getElementById("pledgeAmt").value = '$' + output.pledge.amount;
         document.getElementById("pledgeCurrSupport").value = output.pledge.numOfSupport;
-        document.getElementById("pledgeMaxSupport").value = output.pledge.numMaxSupport;
+        if(output.pledge.numMaxSupport === 1000000){
+          document.getElementById("pledgeMaxSupport").value = 'unlimited';
+        } else { document.getElementById("pledgeMaxSupport").value = output.pledge.numMaxSupport; } 
         document.getElementById("pledgeSupporter").value = compileSupporterList(activity);
       })
       .catch(function (error) {
@@ -524,6 +531,16 @@ function App() {
   }
 
   // Reap Project: Admin
+  const reapProjectAsAdmin = () => {
+    reapProject()
+      .then(function (response) {
+        console.log("Daily Reaping Done")
+        handleListProject(2);   // go back to project list
+      })
+      .catch(function (error) {
+        console.log("Cannot delete project: ", error)
+      })
+  }
 
 
   return (
@@ -579,7 +596,7 @@ function App() {
                     <p></p>
                     Name: <input id="pjName" style={layout.displayDetails} readOnly /><p></p>
                     Type: <input id="pjType" style={layout.displayDetails} readOnly /><p></p>
-                    Story: <input id="pjStory" style={layout.displayDetails} readOnly /><p></p>
+                    Story: <input id="pjStory" style={layout.displayLongDetails} readOnly /><p></p>
                     Designer username: <input id="pjDesigner" style={layout.displayDetails} readOnly /><p></p>
                     Current/Goal Amount: <input id="pjCurrAmt" style={layout.currentAmt} readOnly /> out of <input id="pjGoalAmt" style={layout.displayDetails} readOnly /><p></p>
                     Number of Supporter:<input id="pjNumSupporter" style={layout.displayDetails} readOnly /><p></p>
@@ -697,7 +714,7 @@ function App() {
                       <ul>
                         <div key={pledge.pledgeID}>
                           {pjLaunched === 1 ? <p></p> : <button type="button" style={layout.smallControlButton} onClick={(e) => handleDeletePledge(pledge.pledgeID)}>-</button>}
-                          <button type="button" style={layout.pledgeDetails} onClick={(e) => showPledgeDetail(pledge, document.getElementById("pjName").value)}>{" ID: " + pledge.pledgeID + ", Amount: $" + pledge.amount + ", Support: " + pledge.numOfSupport + "/" + pledge.numMaxSupport + ", " + pledge.reward}</button>
+                          <button type="button" style={layout.pledgeDetails} onClick={(e) => showPledgeDetail(pledge, document.getElementById("pjName").value)}>{" ID: " + pledge.pledgeID + ", Amount: $" + pledge.amount + ", # of Support: " + pledge.numOfSupport  + ", " + pledge.reward}</button>
                         </div>
                       </ul>
                     ))}
@@ -759,7 +776,9 @@ function App() {
                     {dbData.map(item => (
                       <div key={item.projectName} style={layout.indivProject}>
                         <div style={layout.projectDetails}>{" Project Name: " + item.projectName}</div>
-                        <div style={layout.projectDetails}>{" Story: " + item.story}</div><p></p>
+                        <div style={layout.projectDetails}>{" Story: " + item.story}</div>
+                        {item.isFail? <div style={layout.projectDetails}>{"FAiLED"}</div> : <></>}
+                        {item.isSuccessful? <div style={layout.projectDetails}>{"GOAL ACHIEVED"}</div> : <></>}
                         <button type="button" style={layout.viewProjectButton} onClick={() => handleDeleteProjectAdmin(item.projectName)}>Delete</button>
                       </div>
                     ))}
@@ -780,6 +799,7 @@ function App() {
               <button type="button" style={layout.display0}> {"Welcome Back! " + role} </button>
               <button type="button" style={layout.button1} onClick={() => handleListProject(2)}> List Project </button>
               <button type="button" style={layout.button2}> Delete Project </button>
+              <button type="button" style={layout.button3} onClick={() => reapProjectAsAdmin()}> Reap Project </button>
             </div>
           </>
         )
