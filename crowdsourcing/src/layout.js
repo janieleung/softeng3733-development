@@ -116,9 +116,35 @@ export const layout = {
     fontFamily: "Monaco, monospace",
   },
 
+  display3: {
+    position: "absolute",
+    top: 240,
+    width: 200,
+    height: 50,
+    boxShadow: '-1px 1px 2px #f4cccc',
+    borderRadius: '10px',
+    backgroundColor: '#f4cccc',
+    color: '#85200c',
+    borderColor: '#85200c',
+    fontFamily: "Monaco, monospace",
+  },
+
   button4: {
     position: "absolute",
     top: 310,
+    width: 200,
+    height: 50,
+    boxShadow: '-1px 1px 2px #f4cccc',
+    borderRadius: '10px',
+    backgroundColor: '#85200c',
+    color: 'white',
+    borderColor: '#f4cccc',
+    fontFamily: "Monaco, monospace",
+  },
+
+  button5: {
+    position: "absolute",
+    top: 380,
     width: 200,
     height: 50,
     boxShadow: '-1px 1px 2px #f4cccc',
@@ -250,6 +276,21 @@ export const layout = {
   searchButton: {
     position: "absolute",
     top: 30,
+    right: 18,
+    width: 45,
+    height: 45,
+  },
+
+  searchBar2: {
+    position: "absolute",
+    top: 95,
+    width: 140,
+    height: 40,
+  },
+
+  searchButton2: {
+    position: "absolute",
+    top: 95,
     right: 18,
     width: 45,
     height: 45,

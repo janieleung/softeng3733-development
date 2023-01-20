@@ -5,7 +5,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faBars, faSearch } from '@fortawesome/free-solid-svg-icons';
 // import axios from "axios";
 import { createPledge, createProject, deleteProjectAsDesigner, launchProject, listProjectAsDesigner, registerDesigner, viewProjectAsDesigner, deletePledge, reviewProjectActivity } from './Lambda/Designer';
-import { addFund, claimPledge, registerSupporter, reviewSupporterActivity, searchProject, viewPledge, viewProjectAsSupporter, directSupport, viewBudget } from './Lambda/Supporter.js';
+import { addFund, claimPledge, registerSupporter, reviewSupporterActivity, searchProject, viewPledge, viewProjectAsSupporter, directSupport, viewBudget, searchProjectKeyword } from './Lambda/Supporter.js';
 import { deleteProjectAsAdmin, listProjectAsAdmin, reapProject, userLogin } from './Lambda/Admin.js';
 
 function App() {
@@ -22,6 +22,8 @@ function App() {
   const [currAcctName, setCurrAcctName] = React.useState(''); // TODO: Identify designer 
   const [currAcctEmail, setCurrAcctEmail] = React.useState(''); // TODO: Identify designer 
   const [pj, setPj] = React.useState('');
+  const [pjRaised, setPjRaised] = React.useState('');
+  const [pjGoal, setPjGoal] = React.useState('');
   const [pjPledge, setPjPledge] = React.useState([]);
   const [pjLaunched, setPjLaunched] = React.useState(1);
   const [pjClaimActivity, setClaimActivity] = React.useState([]);
@@ -34,6 +36,7 @@ function App() {
   const [pastDS, setPastDS] = React.useState([]);
   const [currPledge, setCurrPledge] = React.useState([]);
   const [pjSuccess, setPjSuccess] = React.useState(0);
+  const [pledgeinfo, setPledgeInfo] = React.useState([]);
 
   // admin states
   const [adminView, setAdminView] = React.useState(0);    // 0 : no project, 1: all project
@@ -368,13 +371,16 @@ function App() {
       .then(function (response) {
         let claimActivity = response.data.result["pledges"];
         let directSupportList = response.data.result["Direct Support"];
+        let raised = response.data.result.project.currentAmount;
+        let goal = response.data.result.project.goal;
         setClaimActivity(claimActivity);
         setDSList(directSupportList);
+        setPjRaised(raised);
+        setPjGoal(goal);
         console.log(response)
 
         setDesignerView(3);
         console.log("projectName = ", projectName)
-        document.getElementById('pjName').value = projectName;
         // DISPLAY INFORMATION
       })
       .catch(function (error) {
@@ -385,8 +391,24 @@ function App() {
   //-----------Supporter-------------
   // Search Project: Supporter
   const handleSearchProject = type => {
-    console.log("Searching Project with these keywords: ", type);
+    console.log("Searching Project with this type: ", type);
     searchProject(type)
+      .then(function (response) {
+        console.log("Supporter - Searching project with keyword: ", response)
+        let output_list = response.data.result;
+        console.log(output_list)
+        setdbData(output_list);
+        setSupporterView(1)
+      })
+      .catch(function (error) {
+        console.log("Cannot search project: ", error)
+      })
+  }
+
+  // Search Project with Keyword: Supporter
+  const handleSearchKeyword = type => {
+    console.log("Searching Project with these keywords: ", type);
+    searchProjectKeyword(type)
       .then(function (response) {
         console.log("Supporter - Searching project with keyword: ", response)
         let output_list = response.data.result;
@@ -486,6 +508,7 @@ function App() {
 
     reviewSupporterActivity(name, email)
       .then(function (response) {
+        console.log(response)
         let pastSuccessfulPledges = response.data.result["past successful pledges"];
         setPastSuccessfulPledges(pastSuccessfulPledges);
         let currentPledges = response.data.result["current pledges"];
@@ -520,7 +543,7 @@ function App() {
   // Delete Project: Admin
   const handleDeleteProjectAdmin = (projectName) => {
     // TODO: Switch back to Admin
-    deleteProjectAsDesigner(projectName)
+    deleteProjectAsAdmin(projectName)
       .then(function (response) {
         console.log("Project has been deleted")
         handleListProject(2);   // go back to project list
@@ -639,7 +662,7 @@ function App() {
                     {pastSusPledges.map(ds => (
                       <ul>
                         <div>
-                          {"-$" + ds.amount + " - " + ds.projectName}
+                          {"-$" + ds.amount + " - " + ds.projectName + " - " + ds.reward}
                         </div>
                       </ul>
                     ))}
@@ -647,7 +670,7 @@ function App() {
                     {currPledge.map(ds => (
                       <ul>
                         <div>
-                          {"-$" + ds.amount + " - " + ds.projectName}
+                          {"-$" + ds.amount + " - " + ds.projectName + " - " + ds.reward}
                         </div>
                       </ul>
                     ))}
@@ -660,10 +683,12 @@ function App() {
               {/* Sidebar */}
               <input type="text" style={layout.searchBar} placeholder=" Search by Genre.." id="searchbar" />
               <button type="submit" style={layout.searchButton} onClick={(e) => handleSearchProject(document.getElementById("searchbar").value)}><FontAwesomeIcon icon={faSearch} size={'1x'} /></button>
-              <button type="button" style={layout.display1}> {"Welcome Back! " + currAcctName}</button>
-              <button type="button" style={layout.display2} onClick={(e) => handleViewBudget(currAcctName, currAcctEmail)}> {"Budget: " + supporterBudget}</button>
-              <button type="button" style={layout.button3} onClick={(e) => showRegModal(8)}> Add Fund</button>
-              <button type="button" style={layout.button4} onClick={(e) => handleReviewSupporter(currAcctName, currAcctEmail)}> Account Activity</button>
+              <input type="text" style={layout.searchBar2} placeholder=" Search by Description.." id="searchbar2" />
+              <button type="submit" style={layout.searchButton2} onClick={(e) => handleSearchKeyword(document.getElementById("searchbar2").value)}><FontAwesomeIcon icon={faSearch} size={'1x'} /></button>
+              <button type="button" style={layout.display2}> {"Welcome Back! " + currAcctName}</button>
+              <button type="button" style={layout.display3} onClick={(e) => handleViewBudget(currAcctName, currAcctEmail)}> {"Budget: " + supporterBudget}</button>
+              <button type="button" style={layout.button4} onClick={(e) => showRegModal(8)}> Add Fund</button>
+              <button type="button" style={layout.button5} onClick={(e) => handleReviewSupporter(currAcctName, currAcctEmail)}> Account Activity</button>
             </div>
           </>
         )
@@ -732,6 +757,7 @@ function App() {
               {designerView === 3 && (
                 <>
                   <div style={layout.projectView}>
+                    Current/Goal Amount: <input id="pjCurrAmt" style={layout.currentAmt} value={pjRaised} readOnly /> out of <input id="pjGoalAmt" style={layout.displayDetails} value={pjGoal}readOnly /><p></p>
                     Activity of <input id="pjName" style={layout.displayDetails} value={pj} readOnly /><p></p>
                     Pledge Activity: <p></p>
                     {pjClaimActivity.map(activity => (
@@ -798,8 +824,8 @@ function App() {
               {/* Sidebar */}
               <button type="button" style={layout.display0}> {"Welcome Back! " + role} </button>
               <button type="button" style={layout.button1} onClick={() => handleListProject(2)}> List Project </button>
-              <button type="button" style={layout.button2}> Delete Project </button>
-              <button type="button" style={layout.button3} onClick={() => reapProjectAsAdmin()}> Reap Project </button>
+              {/* <button type="button" style={layout.button2}> Delete Project </button> */}
+              <button type="button" style={layout.button2} onClick={() => reapProjectAsAdmin()}> Reap Project </button>
             </div>
           </>
         )

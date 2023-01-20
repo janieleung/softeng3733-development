@@ -40,7 +40,7 @@ export function deleteProjectAsAdmin(projectName){
     let value = JSON.stringify(msg)
     let data = { 'body': value }
 
-    return instancep1.post("/deleteProjectAdmin", data);
+    return instancep3.post("/deleteProjectAdmin", data);
 }
 
 export function reapProject() {

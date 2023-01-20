@@ -114,3 +114,13 @@ export function viewBudget(name, email){
 
     return instancep1.post("/supporterBudget", data);
 }
+
+export function searchProjectKeyword(type){
+    console.log("Searching Project... Keyword:", type);
+    let msg = {}
+    msg["type"] = type;
+    let value = JSON.stringify(msg)
+    let data = { 'body': value }
+
+    return instancep3.post("/search-projects-keyword", data);
+}
