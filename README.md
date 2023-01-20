@@ -1,7 +1,10 @@
-# CS 3733 B22 - Crowdsourcing Platform
+# Software Engineering - CS3733 B22
 
 ## Crowdsourcing Platform
 Group : Ua Mau ke Ea o ka 'Āina i ka Pono Crowdsourcing
+
+[<img src="https://github.com/janieleung/softeng3733-development/blob/main/crowdsourcing/thumbnail%20crowdsourcing.png?raw=true" width="500" />](https://www.youtube.com/watch?v=kgIKVemSwAA "Click to watch")
+
 ### Accessing the website (1/20/2023 Bucket closed)
 http://mycrowdsourcing.s3-website-us-east-1.amazonaws.com/
 
@@ -28,12 +31,17 @@ Here are some instructions for navigating the website
 - Yuen Lam Leung
 - Alyssa Ogi  
 - Jinjia Ou 
+
 --- 
 ## Ninja-Se Escape Room
+
 Individual Project on developing a React Application for the game "Ninja-Se Escape Room"
-[![Level1-3 of Ninja-Se Escape Room](https://imgur.com/a/5tITrAi)](https://youtu.be/bLIB28c-vMA "Click to watch the game")
+[<img src="https://github.com/janieleung/softeng3733-development/blob/main/crowdsourcing/thumbnail.png?raw=true" width="500" />](https://youtu.be/bLIB28c-vMA "Click to watch the game")
+
 ---
 ## Trial
+
 Implementation of the tutorial: *My First React Application* <br />
 A webapp that allows user to adjust canvas size 
+
 ---
