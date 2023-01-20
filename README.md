@@ -2,7 +2,7 @@
 
 ## Crowdsourcing Platform
 Group : Ua Mau ke Ea o ka 'Āina i ka Pono Crowdsourcing
-### Accessing the website
+### Accessing the website (1/20/2023 Bucket closed)
 http://mycrowdsourcing.s3-website-us-east-1.amazonaws.com/
 
 ### Notes on Navigating the website
@@ -29,10 +29,11 @@ Here are some instructions for navigating the website
 - Alyssa Ogi  
 - Jinjia Ou 
 --- 
-## Trial
-Implementation of the tutorial: *My First React Application* <br />
-A webapp that allows user to adjust canvas size 
-
 ## Ninja-Se Escape Room
 Individual Project on developing a React Application for the game "Ninja-Se Escape Room"
 [![Level1-3 of Ninja-Se Escape Room](https://imgur.com/a/5tITrAi)](https://youtu.be/bLIB28c-vMA "Click to watch the game")
+---
+## Trial
+Implementation of the tutorial: *My First React Application* <br />
+A webapp that allows user to adjust canvas size 
+---
